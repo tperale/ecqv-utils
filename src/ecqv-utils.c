@@ -31,8 +31,8 @@
     "<CMD>: cert_generate\n" \
     "<Options>\n" \
     "  -i <arg>     Identity of the requester\n" \
-    "  -r <arg>     The HEX representation EC public key of the CA\n" \
-    "  -c <arg>     The PEM file containing the EC private key of the CA\n" \
+    "  -r <arg>     The HEX representation EC public key of the requester\n" \
+    "  -k <arg>     The PEM file containing the EC private key of the CA\n" \
     "\n" \
 
 #define ECQV_CERT_RECEPTION_CMD_INFO \
@@ -140,7 +140,7 @@ static void parse_cmd_options_cert_generate(int argc, char **argv)
         }
     }
 
-    if (!ecqv_opt.identity || !ecqv_opt.requester_key || !ecqv_opt.ca_key) {
+    if (!ecqv_opt.identity || !ecqv_opt.requester_pk || !ecqv_opt.ca_key) {
         fprintf(stderr, ECQV_INFO ECQV_CERT_GENERATE_CMD_INFO);
         exit(EXIT_FAILURE);
     }
