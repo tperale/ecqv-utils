@@ -335,13 +335,13 @@ void ecqv_sign(const struct ecqv_opt_t *opt) {
     /* ECDSA_SIG_get0(sign, NULL, NULL); */
 }
 
-void ecqv_generate_confirmation(const struct ecqv_opt_t *opt) {
+void ecqv_generate_confirmation(char* cert_private_key, char* ca_pk, char* g_path) {
     const EC_GROUP *group = EC_GROUP_new_by_curve_name(NID_secp256k1);
     BIGNUM *Q_ca = BN_new();
-    BN_hex2bn(&Q_ca, opt->ca_pk);
+    BN_hex2bn(&Q_ca, ca_pk);
     BIGNUM *d_i = BN_new();
-    BN_hex2bn(&d_i, opt->cert_priv);
-    EC_KEY *g = ecqv_import_pem(opt->g_path);
+    BN_hex2bn(&d_i, cert_private_key);
+    EC_KEY *g = ecqv_import_pem(g_path);
     const BIGNUM *g_i = EC_KEY_get0_private_key(g);
     BIGNUM *verif = BN_new();
     BIGNUM *K = BN_new();
@@ -376,17 +376,17 @@ void ecqv_generate_confirmation(const struct ecqv_opt_t *opt) {
     BN_free(Q_ca);
 }
 
-void ecqv_verify_confirmation(const struct ecqv_opt_t *opt)
+void ecqv_verify_confirmation(char* cert_pk, char* g_pk, char* verification_number)
 {
     (void) opt;
 
     /* BIGNUM *Q_i = BN_new(); */
-    /* BN_hex2bn(&Q_i, opt->cert_pk); */
+    /* BN_hex2bn(&Q_i, cert_pk); */
     /* BIGNUM *G_i = BN_new(); */
-    /* BN_hex2bn(&G_i, opt->g_pk); */
+    /* BN_hex2bn(&G_i, g_pk); */
 
     /* BIGNUM *verif = BN_new(); */
-    /* BN_hex2bn(&verif, opt->verif); */
+    /* BN_hex2bn(&verif, verifification_number); */
 
     /* // (d_i + g_i)G == Q_i + G_i */
     /* BIGNUM *verif_pk = BN_new(); */
