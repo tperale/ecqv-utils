@@ -62,7 +62,7 @@ static EC_KEY *ecqv_import_pem(char* filename)
  *
  * @return Point on the curve representing the public key.
  */
-static EC_POINT *ecqv_import_public_key(const EC_GROUP *group, char* pk_str)
+static EC_POINT *ecqv_import_point(const EC_GROUP *group, char* pk_str)
 {
     EC_POINT *pk = EC_POINT_new(group);
     EC_POINT_hex2point(group, pk_str, pk, NULL);
@@ -131,27 +131,29 @@ static EC_POINT* ecqv_import_implicit_cert(const EC_GROUP *group, char* cert_str
     return point;
 }
 
-void ecqv_export_ca_public_key(const struct ecqv_opt_t *opt) {
-    if (!opt->ca_key) {
+void ecqv_pk_extract(const struct ecqv_opt_t *opt) {
+    const EC_GROUP *group;
+    if (opt->ca_key) {
+        EC_KEY *key = ecqv_import_pem(opt->ca_key);
+        group = EC_KEY_get0_group(key);
+
+        char *str = EC_POINT_point2hex(group, EC_KEY_get0_public_key(key), POINT_CONVERSION_UNCOMPRESSED, NULL);
+        printf("%s\n", str);
+        OPENSSL_free(str);
+    } else if (opt->ca_pk) {
+        BIGNUM *priv_k = BN_new();
+        group = EC_GROUP_new_by_curve_name(NID_secp256k1);
+        BN_hex2bn(&priv_k, opt->ca_pk);
+        EC_POINT* pk = EC_POINT_new(group);
+        EC_POINT_mul(group, pk, priv_k, NULL, NULL, NULL);
+
+        char *str = EC_POINT_point2hex(group, pk, POINT_CONVERSION_UNCOMPRESSED, NULL);
+        printf("%s\n", str);
+        OPENSSL_free(str);
+    } else {
         fprintf(stderr, "No CA private key given.\n");
         return;
     }
-
-    EC_KEY *ca_key = ecqv_import_pem(opt->ca_key);
-    if (!ca_key) {
-        return;
-    }
-    const EC_GROUP *group = EC_KEY_get0_group(ca_key);
-
-    char *str = EC_POINT_point2hex(group, EC_KEY_get0_public_key(ca_key), POINT_CONVERSION_UNCOMPRESSED, NULL);
-    printf("%s\n", str);
-
-    OPENSSL_free(str);
-
-    /* if (EC_KEY_print_fp(stdout, ca_key, 0) == 0) { */
-    /*     fprintf(stderr, "Log: error printing EC key.\n"); */
-    /*     return; */
-    /* } */
 
     fflush(stdout);
 }
@@ -184,7 +186,7 @@ void ecqv_cert_generate(const struct ecqv_opt_t *opt) {
     const EC_GROUP *group = EC_KEY_get0_group(ca_key);
     BIGNUM* order = BN_new();
     EC_GROUP_get_order(group, order, NULL);
-    EC_POINT *R_u = ecqv_import_public_key(group, opt->requester_pk);
+    EC_POINT *R_u = ecqv_import_point(group, opt->requester_pk);
     EC_POINT *kG = EC_POINT_new(group);
     BIGNUM *k = BN_new();
     EC_POINT *P_u = EC_POINT_new(group);
@@ -233,7 +235,7 @@ void ecqv_cert_generate(const struct ecqv_opt_t *opt) {
 void ecqv_cert_reception(const struct ecqv_opt_t *opt) {
     EC_KEY *req_key = ecqv_import_pem(opt->requester_key);
     const EC_GROUP *group = EC_KEY_get0_group(req_key);
-    EC_POINT *Q_ca = ecqv_import_public_key(group, opt->ca_pk);
+    EC_POINT *Q_ca = ecqv_import_point(group, opt->ca_pk);
     EC_KEY *key = EC_KEY_new();
     EC_POINT *P_u = ecqv_import_implicit_cert(group, opt->cert);
     char* U = opt->identity;
@@ -268,7 +270,9 @@ void ecqv_cert_reception(const struct ecqv_opt_t *opt) {
     EC_KEY_set_public_key(key, Q_u);
 
     if (EC_KEY_check_key(key)) {
-        char *str = EC_POINT_point2hex(group, EC_KEY_get0_public_key(key), POINT_CONVERSION_UNCOMPRESSED, NULL);
+        /* char *str = EC_POINT_point2hex(group, EC_KEY_get0_public_key(key), POINT_CONVERSION_UNCOMPRESSED, NULL); */
+        /* char *str = BN_bn2hex(EC_KEY_get0_private_key(key)); */
+        char *str = BN_bn2hex(d_u);
         printf("%s\n", str);
         FILE* pem = fopen("cl_key.pem", "wb");
         PEM_write_ECPrivateKey(pem, key, NULL, NULL, 0, NULL, NULL);
@@ -292,7 +296,7 @@ void ecqv_cert_reception(const struct ecqv_opt_t *opt) {
 
 void ecqv_cert_pk_extract(const struct ecqv_opt_t *opt) {
     const EC_GROUP *group = EC_GROUP_new_by_curve_name(NID_secp256k1);
-    EC_POINT *Q_ca = ecqv_import_public_key(group, opt->ca_pk);
+    EC_POINT *Q_ca = ecqv_import_point(group, opt->ca_pk);
     EC_KEY *key = EC_KEY_new();
     EC_POINT *P_u = ecqv_import_implicit_cert(group, opt->cert);
     char* U = opt->identity;
@@ -324,9 +328,73 @@ void ecqv_cert_pk_extract(const struct ecqv_opt_t *opt) {
     EC_KEY_free(key);
 }
 
-
 void ecqv_sign(const struct ecqv_opt_t *opt) {
-    EC_KEY *cl_key = ecqv_import_pem(opt->cl_key);
+    (void) opt;
+    /* EC_KEY *cl_key = ecqv_import_pem(opt->cl_key); */
     /* ECDSA_SIG sign = ECDSA_do_sign(opt->msg, strlen(opt->msg), cl_key); */
     /* ECDSA_SIG_get0(sign, NULL, NULL); */
+}
+
+void ecqv_generate_confirmation(const struct ecqv_opt_t *opt) {
+    const EC_GROUP *group = EC_GROUP_new_by_curve_name(NID_secp256k1);
+    BIGNUM *Q_ca = BN_new();
+    BN_hex2bn(&Q_ca, opt->ca_pk);
+    BIGNUM *d_i = BN_new();
+    BN_hex2bn(&d_i, opt->cert_priv);
+    EC_KEY *g = ecqv_import_pem(opt->g_path);
+    const BIGNUM *g_i = EC_KEY_get0_private_key(g);
+    BIGNUM *verif = BN_new();
+    BIGNUM *K = BN_new();
+
+    // Step 1
+    // Generate the verification number from the private key extracted from the
+    // certificate and a randomly generated big number.
+    BN_add(verif, d_i, g_i);
+
+    // Step 2
+    // Generate the key that will be used to encrypt the content of the
+    // previous addtion
+    // K = d_i . Q_ca
+    BN_CTX *ctx = BN_CTX_new();
+    BN_mul(K, d_i, Q_ca, ctx);
+
+    EC_KEY *key = EC_KEY_new();
+    EC_KEY_set_group(key, group);
+    EC_KEY_set_private_key(key, K);
+
+    // Step 3
+    // Encrypt the verification calculated in `step 1` with the key from 
+    // `step 2`
+    /* ECDSA_SIG *sig; */
+    /* sig = ECDSA_do_sign(NULL, 0, key); */
+
+    EC_KEY_free(key);
+    BN_free(K);
+    BN_free(verif);
+    EC_KEY_free(g);
+    BN_free(d_i);
+    BN_free(Q_ca);
+}
+
+void ecqv_verify_confirmation(const struct ecqv_opt_t *opt)
+{
+    (void) opt;
+
+    /* BIGNUM *Q_i = BN_new(); */
+    /* BN_hex2bn(&Q_i, opt->cert_pk); */
+    /* BIGNUM *G_i = BN_new(); */
+    /* BN_hex2bn(&G_i, opt->g_pk); */
+
+    /* BIGNUM *verif = BN_new(); */
+    /* BN_hex2bn(&verif, opt->verif); */
+
+    /* // (d_i + g_i)G == Q_i + G_i */
+    /* BIGNUM *verif_pk = BN_new(); */
+    /* BN_add(verif_pk, G_i, Q_i); */
+}
+
+
+void ecqv_cert_group_generate(const struct ecqv_opt_t *opt)
+{
+    (void) opt;
 }
