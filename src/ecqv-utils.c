@@ -14,10 +14,11 @@
     "Usage: ecqv-utils CMD [OPTION...] \n" \
     "\n" \
 
-#define ECQV_CA_PUBLIC_KEY_CMD_INFO \
-    "<CMD>: ca_public_key\n" \
+#define ECQV_PK_EXTRACT_CMD_INFO \
+    "<CMD>: pk_extract\n" \
     "<Options>\n" \
     "  -k <arg>     The PEM file containing the EC private key\n" \
+    "  -c <arg>     HEX formatted string of the EC private key\n" \
     "\n" \
 
 #define ECQV_CERT_REQUEST_CMD_INFO \
@@ -73,7 +74,7 @@ static struct ecqv_opt_t ecqv_opt;
 
 static void print_usage_and_exit(void)
 {
-    fprintf(stderr, ECQV_INFO ECQV_CA_PUBLIC_KEY_CMD_INFO ECQV_CERT_REQUEST_CMD_INFO ECQV_CERT_GENERATE_CMD_INFO ECQV_CERT_RECEPTION_CMD_INFO ECQV_CERT_PK_EXTRACT_CMD_INFO);
+    fprintf(stderr, ECQV_INFO ECQV_PK_EXTRACT_CMD_INFO ECQV_CERT_REQUEST_CMD_INFO ECQV_CERT_GENERATE_CMD_INFO ECQV_CERT_RECEPTION_CMD_INFO ECQV_CERT_PK_EXTRACT_CMD_INFO);
     exit(EXIT_FAILURE);
 }
 
@@ -115,7 +116,7 @@ static void parse_cmd_options_pk_extract(int argc, char **argv)
     }
 
     if (!ecqv_opt.ca_key && !ecqv_opt.ca_pk) {
-        fprintf(stderr, ECQV_INFO ECQV_CA_PUBLIC_KEY_CMD_INFO);
+        fprintf(stderr, ECQV_INFO_ECQV_PKEXTRACT_CMD_INFO);
         exit(EXIT_FAILURE);
     }
 }
