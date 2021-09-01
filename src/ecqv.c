@@ -266,12 +266,7 @@ void ecqv_cert_reception(char* requester_key_path, char* ca_pk, char* cert, char
 
     EC_KEY_set_group(key, group);
     EC_KEY_set_private_key(key, d_u);
-
-    char *str = BN_bn2hex(d_u);
-    printf("%s\n", str);
     EC_KEY_set_public_key(key, Q_u);
-    str = EC_POINT_point2hex(group, Q_u, POINT_CONVERSION_UNCOMPRESSED, NULL);
-    printf("%s\n", str);
 
     if (EC_KEY_check_key(key)) {
         /* char *str = EC_POINT_point2hex(group, EC_KEY_get0_public_key(key), POINT_CONVERSION_UNCOMPRESSED, NULL); */
