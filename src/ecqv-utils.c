@@ -116,7 +116,7 @@ static void parse_cmd_options_pk_extract(int argc, char **argv)
     }
 
     if (!ecqv_opt.ca_key && !ecqv_opt.ca_pk) {
-        fprintf(stderr, ECQV_INFO_ECQV_PKEXTRACT_CMD_INFO);
+        fprintf(stderr, ECQV_PK_EXTRACT_CMD_INFO);
         exit(EXIT_FAILURE);
     }
 }
