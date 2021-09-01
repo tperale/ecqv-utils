@@ -25,7 +25,7 @@
     "<CMD>: cert_request\n" \
     "<Options>\n" \
     "  -i <arg>     Identity of the requester\n" \
-    "  -r <arg>     The PEM file containing the EC private key of the requester\n" \
+    "  -k <arg>     The PEM file containing the EC private key of the requester\n" \
     "\n" \
 
 #define ECQV_CERT_GENERATE_CMD_INFO \
@@ -99,6 +99,9 @@ static void parse_cmd_options_pk_extract(int argc, char **argv)
 
     memset(&ecqv_opt, 0, sizeof(ecqv_opt));
     opterr = 0; /* To inhibit error messages */
+
+    ecqv_opt.ca_pk = NULL;
+    ecqv_opt.ca_key = NULL;
 
     while ((opt = getopt(argc, argv, "k:c:")) != -1) {
         switch (opt) {
@@ -374,13 +377,13 @@ int main(int argc, char **argv)
         ecqv_pk_extract(&ecqv_opt);
     } else if (strcmp(cmd, "cert_request") == 0) {
         parse_cmd_options_cert_request(argc, argv);
-        ecqv_cert_request(&ecqv_opt);
+        ecqv_cert_request(ecqv_opt.requester_key);
     } else if (strcmp(cmd, "cert_generate") == 0) {
         parse_cmd_options_cert_generate(argc, argv);
-        ecqv_cert_generate(&ecqv_opt);
+        ecqv_cert_generate(ecqv_opt.ca_key, ecqv_opt.requester_pk, ecqv_opt.identity);
     } else if (strcmp(cmd, "cert_reception") == 0) {
         parse_cmd_options_cert_reception(argc, argv);
-        ecqv_cert_reception(&ecqv_opt);
+        ecqv_cert_reception(ecqv_opt.requester_key, ecqv_opt.ca_pk, ecqv_opt.cert, ecqv_opt.identity, ecqv_opt.r);
     } else if (strcmp(cmd, "cert_pk_extract") == 0) {
         parse_cmd_options_cert_pk_extract(argc, argv);
         ecqv_cert_pk_extract(&ecqv_opt);
@@ -397,6 +400,8 @@ int main(int argc, char **argv)
         parse_cmd_options_sign(argc, argv);
         ecqv_sign(&ecqv_opt);
     } else if (strcmp(cmd, "verify") == 0) {
+    } else {
+        print_usage_and_exit();
     }
 
     return EXIT_SUCCESS;

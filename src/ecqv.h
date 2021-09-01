@@ -28,14 +28,14 @@ void ecqv_export_ca_generator(const struct ecqv_opt_t *opt);
  * 
  * @arg{opt} A struct containing the command line arguments.
  */
-void ecqv_cert_request(const struct ecqv_opt_t *opt);
+void ecqv_cert_request(char* requester_key_path);
 
 /**
  * @desc Generate the certificate from a `cert_request`.
  * 
  * @arg{opt} A struct containing the command line arguments.
  */
-void ecqv_cert_generate(const struct ecqv_opt_t *opt);
+void ecqv_cert_generate(char* ca_key_path, char* requester_pk, char* identity);
 
 /**
  * @desc Extracting the private and public key from the implicit certificate 
@@ -43,7 +43,7 @@ void ecqv_cert_generate(const struct ecqv_opt_t *opt);
  * 
  * @arg{opt} A struct containing the command line arguments.
  */
-void ecqv_cert_reception(const struct ecqv_opt_t *opt);
+void ecqv_cert_reception(char* requester_key_path, char* ca_pk, char* cert, char* U, char* r_str);
 
 /**
  * @desc Extracting the PK from the implicit certificate received

@@ -158,10 +158,10 @@ void ecqv_pk_extract(const struct ecqv_opt_t *opt) {
     fflush(stdout);
 }
 
-void ecqv_cert_request(const struct ecqv_opt_t *opt) {
+void ecqv_cert_request(char* requester_key_path) {
     EC_KEY *key;
     
-    if (NULL == (key = ecqv_import_pem(opt->requester_key))) {
+    if (NULL == (key = ecqv_import_pem(requester_key_path))) {
         return;
     }
 
@@ -181,12 +181,12 @@ void ecqv_cert_request(const struct ecqv_opt_t *opt) {
 
 }
 
-void ecqv_cert_generate(const struct ecqv_opt_t *opt) {
-    EC_KEY *ca_key = ecqv_import_pem(opt->ca_key);
+void ecqv_cert_generate(char* ca_key_path, char* requester_pk, char* identity) {
+    EC_KEY *ca_key = ecqv_import_pem(ca_key_path);
     const EC_GROUP *group = EC_KEY_get0_group(ca_key);
     BIGNUM* order = BN_new();
     EC_GROUP_get_order(group, order, NULL);
-    EC_POINT *R_u = ecqv_import_point(group, opt->requester_pk);
+    EC_POINT *R_u = ecqv_import_point(group, requester_pk);
     EC_POINT *kG = EC_POINT_new(group);
     BIGNUM *k = BN_new();
     EC_POINT *P_u = EC_POINT_new(group);
@@ -209,7 +209,7 @@ void ecqv_cert_generate(const struct ecqv_opt_t *opt) {
     // Step 5: Convert P_u to hex format
     // Step 6: Certificate encoding method call
     // Step 7: Use the hash function to compute e = H_n(Cert_U)
-    e = ecqv_hash_implicit_cert(group, P_u, opt->identity);
+    e = ecqv_hash_implicit_cert(group, P_u, identity);
 
     // Step 8: r = ek + d_ca
     BN_mul(ek, e, k, ctx);
@@ -232,13 +232,12 @@ void ecqv_cert_generate(const struct ecqv_opt_t *opt) {
     BN_CTX_free(ctx);
 }
 
-void ecqv_cert_reception(const struct ecqv_opt_t *opt) {
-    EC_KEY *req_key = ecqv_import_pem(opt->requester_key);
+void ecqv_cert_reception(char* requester_key_path, char* ca_pk, char* cert, char* U, char* r_str) {
+    EC_KEY *req_key = ecqv_import_pem(requester_key_path);
     const EC_GROUP *group = EC_KEY_get0_group(req_key);
-    EC_POINT *Q_ca = ecqv_import_point(group, opt->ca_pk);
+    EC_POINT *Q_ca = ecqv_import_point(group, ca_pk);
     EC_KEY *key = EC_KEY_new();
-    EC_POINT *P_u = ecqv_import_implicit_cert(group, opt->cert);
-    char* U = opt->identity;
+    EC_POINT *P_u = ecqv_import_implicit_cert(group, cert);
     BN_CTX *ctx = BN_CTX_new();
     BIGNUM *r = BN_new();
     BIGNUM *e = BN_new();
@@ -248,7 +247,7 @@ void ecqv_cert_reception(const struct ecqv_opt_t *opt) {
     EC_POINT *Q_u = EC_POINT_new(group);
 
     // Step 2: Import 'r' parameter passed as CLI argument
-    BN_hex2bn(&r, opt->r);
+    BN_hex2bn(&r, r_str);
 
     // Step 3: Calculate 'e' based on the hash of the implicit certificate 
     e = ecqv_hash_implicit_cert(group, P_u, U);
@@ -267,7 +266,12 @@ void ecqv_cert_reception(const struct ecqv_opt_t *opt) {
 
     EC_KEY_set_group(key, group);
     EC_KEY_set_private_key(key, d_u);
+
+    char *str = BN_bn2hex(d_u);
+    printf("%s\n", str);
     EC_KEY_set_public_key(key, Q_u);
+    str = EC_POINT_point2hex(group, Q_u, POINT_CONVERSION_UNCOMPRESSED, NULL);
+    printf("%s\n", str);
 
     if (EC_KEY_check_key(key)) {
         /* char *str = EC_POINT_point2hex(group, EC_KEY_get0_public_key(key), POINT_CONVERSION_UNCOMPRESSED, NULL); */
@@ -368,6 +372,10 @@ void ecqv_generate_confirmation(char* cert_private_key, char* ca_pk, char* g_pat
     /* ECDSA_SIG *sig; */
     /* sig = ECDSA_do_sign(NULL, 0, key); */
 
+    char *str = BN_bn2hex(verif);
+    printf("%s\n", str);
+    OPENSSL_free(str);
+
     EC_KEY_free(key);
     BN_free(K);
     BN_free(verif);
@@ -378,7 +386,9 @@ void ecqv_generate_confirmation(char* cert_private_key, char* ca_pk, char* g_pat
 
 void ecqv_verify_confirmation(char* cert_pk, char* g_pk, char* verification_number)
 {
-    (void) opt;
+    (void) cert_pk;
+    (void) g_pk;
+    (void) verification_number;
 
     /* BIGNUM *Q_i = BN_new(); */
     /* BN_hex2bn(&Q_i, cert_pk); */
