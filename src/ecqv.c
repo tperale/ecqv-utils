@@ -360,6 +360,7 @@ void ecqv_generate_confirmation(char* cert_private_key, char* ca_pk, char* g_pat
     EC_KEY *key = EC_KEY_new();
     EC_KEY_set_group(key, group);
     EC_KEY_set_private_key(key, K);
+    /* EC_KEY_set_public_key(key, K); */
 
     // Step 3
     // Encrypt the verification calculated in `step 1` with the key from 
@@ -385,13 +386,25 @@ void ecqv_verify_confirmation(char* cert_pk, char* g_pk, char* verification_numb
     (void) g_pk;
     (void) verification_number;
 
-    /* BIGNUM *Q_i = BN_new(); */
-    /* BN_hex2bn(&Q_i, cert_pk); */
-    /* BIGNUM *G_i = BN_new(); */
-    /* BN_hex2bn(&G_i, g_pk); */
+    const EC_GROUP *group = EC_GROUP_new_by_curve_name(NID_secp256k1);
+    BIGNUM *Q_i = BN_new();
+    BN_hex2bn(&Q_i, cert_pk);
+    BIGNUM *G_i = BN_new();
+    BN_hex2bn(&G_i, g_pk);
 
-    /* BIGNUM *verif = BN_new(); */
+    BIGNUM *verif = BN_new();
+    BN_add(verif, Q_i, G_i);
+    EC_POINT *verif_p = verif_p = EC_POINT_bn2point(group, verif, NULL, NULL);
+
+    EC_POINT *verif_priv = EC_POINT_new(group);
+    EC_POINT_mul(group, verif_priv, verif, NULL, NULL, NULL);
+    char* verif_str = BN_bn2hex(verif);
+    /* char* verif_str = EC_POINT_point2hex(group, verif_priv, POINT_CONVERSION_UNCOMPRESSED, NULL); */
+
+    printf("%s\n%s\n", verif_str, verification_number);
     /* BN_hex2bn(&verif, verifification_number); */
+
+    /* EC_KEY *ca_key = ecqv_import_pem(ca_path); */
 
     /* // (d_i + g_i)G == Q_i + G_i */
     /* BIGNUM *verif_pk = BN_new(); */
