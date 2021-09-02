@@ -382,33 +382,25 @@ void ecqv_generate_confirmation(char* cert_private_key, char* ca_pk, char* g_pat
 
 void ecqv_verify_confirmation(char* cert_pk, char* g_pk, char* verification_number)
 {
-    (void) cert_pk;
-    (void) g_pk;
-    (void) verification_number;
-
     const EC_GROUP *group = EC_GROUP_new_by_curve_name(NID_secp256k1);
-    BIGNUM *Q_i = BN_new();
-    BN_hex2bn(&Q_i, cert_pk);
-    BIGNUM *G_i = BN_new();
-    BN_hex2bn(&G_i, g_pk);
 
-    BIGNUM *verif = BN_new();
-    BN_add(verif, Q_i, G_i);
-    EC_POINT *verif_p = verif_p = EC_POINT_bn2point(group, verif, NULL, NULL);
+    // (d_i + g_i)G == Q_i + G_i
+    EC_POINT *Q_i = EC_POINT_new(group);
+    EC_POINT_hex2point(group, cert_pk, Q_i, NULL);
+    EC_POINT *G_i = EC_POINT_new(group);
+    EC_POINT_hex2point(group, g_pk, G_i, NULL);
 
+    EC_POINT *verif = EC_POINT_new(group);
+    EC_POINT_add(group, verif, Q_i, G_i, NULL);
+
+    BIGNUM *received_verif = BN_new();
+    BN_hex2bn(&received_verif, verification_number);
     EC_POINT *verif_priv = EC_POINT_new(group);
-    EC_POINT_mul(group, verif_priv, verif, NULL, NULL, NULL);
-    char* verif_str = BN_bn2hex(verif);
-    /* char* verif_str = EC_POINT_point2hex(group, verif_priv, POINT_CONVERSION_UNCOMPRESSED, NULL); */
+    EC_POINT_mul(group, verif_priv, received_verif, NULL, NULL, NULL);
 
-    printf("%s\n%s\n", verif_str, verification_number);
-    /* BN_hex2bn(&verif, verifification_number); */
-
-    /* EC_KEY *ca_key = ecqv_import_pem(ca_path); */
-
-    /* // (d_i + g_i)G == Q_i + G_i */
-    /* BIGNUM *verif_pk = BN_new(); */
-    /* BN_add(verif_pk, G_i, Q_i); */
+    char* verif_str = EC_POINT_point2hex(group, verif, POINT_CONVERSION_UNCOMPRESSED, NULL);
+    char* received_verif_str = EC_POINT_point2hex(group, verif_priv, POINT_CONVERSION_UNCOMPRESSED, NULL);
+    printf("%s\n%s\n", verif_str, received_verif_str);
 }
 
 
