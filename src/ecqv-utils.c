@@ -78,20 +78,21 @@ static void print_usage_and_exit(void)
     exit(EXIT_FAILURE);
 }
 
-/* static size_t parse_cmd_list(char* input, char** output) */
-/* { */
-/*     size_t len; */
-/*     char* s; */
-/*     for (len = 0, s = input; s[len]; s[len] == ',' ? len++ : *s++); */
+static size_t parse_cmd_list(char* input, char*** output)
+{
+    int len;
+    char* s;
+    for (len = 0, s = input; s[len]; s[len] == ',' ? len++ : *s++);
 
-/*     output = malloc(sizeof(char*) * (len + 1)); */
+    size_t length = (size_t) (len + 1);
+    *output = malloc(sizeof(char*) * length);
 
-/*     size_t n = 0; */
-/*     output[n] = strtok(input, ","); */
-/*     while(output[n] && n < len) output[++n] = strtok(NULL, ","); */
+    size_t n = 0;
+    (*output)[n] = strtok(input, ",");
+    while((*output)[n] && n < length) (*output)[++n] = strtok(NULL, ",");
 
-/*     return len; */
-/* } */
+    return length;
+}
 
 static void parse_cmd_options_pk_extract(int argc, char **argv)
 {
@@ -244,20 +245,28 @@ static void parse_cmd_options_verify_confirmation(int argc, char **argv)
     }
 }
 
-static void parse_cmd_options_cert_group_generate(int argc, char **argv)
+static void parse_cmd_options_cert_group_generate(int argc, char **argv, char** ca_path, char*** ids, char*** pubsub_pks, char*** g_pks, char*** verify_nums, size_t* n)
 {
     int opt;
 
-    memset(&ecqv_opt, 0, sizeof(ecqv_opt));
     opterr = 0; /* To inhibit error messages */
 
     while ((opt = getopt(argc, argv, "q:g:")) != -1) {
         switch (opt) {
-            case 'q':
-                ecqv_opt.identity = optarg;
+            case 'c':
+                *ca_path = optarg;
+                break;
+            case 'i':
+                *n = parse_cmd_list(optarg, ids);
                 break;
             case 'g':
-                ecqv_opt.requester_pk = optarg;
+                *n = parse_cmd_list(optarg, g_pks);
+                break;
+            case 'r':
+                *n = parse_cmd_list(optarg, pubsub_pks);
+                break;
+            case 'v':
+                *n = parse_cmd_list(optarg, verify_nums);
                 break;
             default:
                 print_usage_and_exit();
@@ -265,10 +274,10 @@ static void parse_cmd_options_cert_group_generate(int argc, char **argv)
         }
     }
 
-    if (!ecqv_opt.identity || !ecqv_opt.requester_pk || !ecqv_opt.ca_key) {
-        fprintf(stderr, ECQV_INFO ECQV_CERT_GENERATE_CMD_INFO);
-        exit(EXIT_FAILURE);
-    }
+    /* if (!ca_priv_key || !ecqv_opt.requester_pk || !ecqv_opt.ca_key) { */
+    /*     fprintf(stderr, ECQV_INFO ECQV_CERT_GENERATE_CMD_INFO); */
+    /*     exit(EXIT_FAILURE); */
+    /* } */
 }
 
 
@@ -368,6 +377,7 @@ int main(int argc, char **argv)
     }
 
     char* cmd = argv[1];
+    printf("%s\n", cmd);
 
     argc--;
     argv++;
@@ -394,8 +404,14 @@ int main(int argc, char **argv)
         parse_cmd_options_verify_confirmation(argc, argv);
         ecqv_verify_confirmation(ecqv_opt.cert_pk, ecqv_opt.g_pk, ecqv_opt.msg);
     } else if (strcmp(cmd, "group_generate") == 0) {
-        parse_cmd_options_cert_group_generate(argc, argv);
-        ecqv_cert_group_generate(&ecqv_opt);
+        char* ca_path;
+        char** ids;
+        char** pubsub_pks; 
+        char** g_pks;
+        char** verify_nums;
+        size_t n;
+        parse_cmd_options_cert_group_generate(argc, argv, &ca_path, &ids, &pubsub_pks, &g_pks, &verify_nums, &n);
+        ecqv_cert_group_generate(ca_path, ids, pubsub_pks, g_pks, verify_nums, n);
     } else if (strcmp(cmd, "sign") == 0) {
         parse_cmd_options_sign(argc, argv);
         ecqv_sign(&ecqv_opt);

@@ -1,6 +1,8 @@
 #ifndef __ECQV_H_
 #define __ECQV_H_
 
+#include <stddef.h>
+
 struct ecqv_opt_t {
     char *ca_key; /* Path to .pem file of CA authority priv key (-k) */
     char *ca_pk; /* HEX formatted plain text PK of CA authority */
@@ -70,7 +72,7 @@ void ecqv_generate_confirmation(char* cert_private_key, char* ca_pk, char* g_pat
  */
 void ecqv_verify_confirmation(char* cert_pk, char* g_pk, char* verification_number);
 
-void ecqv_cert_group_generate(const struct ecqv_opt_t *opt);
+void ecqv_cert_group_generate(char* ca_priv_key, char** ids, char** pubsub_pks, char** g_pks, char** verify_nums, size_t n);
 
 void ecqv_sign(const struct ecqv_opt_t *opt);
 

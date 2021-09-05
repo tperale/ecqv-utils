@@ -131,6 +131,21 @@ static EC_POINT* ecqv_import_implicit_cert(const EC_GROUP *group, char* cert_str
     return point;
 }
 
+static EC_POINT* ecqv_pk_extract_from_bn(const EC_GROUP *group, BIGNUM* bn) {
+    EC_POINT* pk = EC_POINT_new(group);
+    EC_POINT_mul(group, pk, bn, NULL, NULL, NULL);
+    return pk;
+}
+
+static EC_POINT* ecqv_pk_extract_from_hex(const EC_GROUP *group, char* bn_hex) {
+    BIGNUM *priv_k = BN_new();
+    BN_hex2bn(&priv_k, bn_hex);
+    EC_POINT* pk = EC_POINT_new(group);
+    EC_POINT_mul(group, pk, priv_k, NULL, NULL, NULL);
+    BN_free(priv_k);
+    return pk;
+}
+
 void ecqv_pk_extract(const struct ecqv_opt_t *opt) {
     const EC_GROUP *group;
     if (opt->ca_key) {
@@ -141,11 +156,8 @@ void ecqv_pk_extract(const struct ecqv_opt_t *opt) {
         printf("%s\n", str);
         OPENSSL_free(str);
     } else if (opt->ca_pk) {
-        BIGNUM *priv_k = BN_new();
         group = EC_GROUP_new_by_curve_name(NID_secp256k1);
-        BN_hex2bn(&priv_k, opt->ca_pk);
-        EC_POINT* pk = EC_POINT_new(group);
-        EC_POINT_mul(group, pk, priv_k, NULL, NULL, NULL);
+        EC_POINT* pk = ecqv_pk_extract_from_hex(group, opt->ca_pk);
 
         char *str = EC_POINT_point2hex(group, pk, POINT_CONVERSION_UNCOMPRESSED, NULL);
         printf("%s\n", str);
@@ -403,8 +415,85 @@ void ecqv_verify_confirmation(char* cert_pk, char* g_pk, char* verification_numb
     printf("%s\n%s\n", verif_str, received_verif_str);
 }
 
-
-void ecqv_cert_group_generate(const struct ecqv_opt_t *opt)
+static BIGNUM* ecqv_build_group_private_key(EC_KEY* ca_key, char** ids, size_t ids_len)
 {
-    (void) opt;
+    EVP_MD_CTX *ctx = EVP_MD_CTX_create();
+    unsigned char priv_key[EVP_MAX_MD_SIZE];
+    unsigned int priv_key_len;
+    BIGNUM *result = BN_new();
+  
+    EVP_DigestInit_ex(ctx, EVP_sha1(), 0);
+    for (size_t i = 0; i < ids_len; ++i) {
+        EVP_DigestUpdate(ctx, ids[i], strlen(ids[i]));
+    }
+    char* ca_priv_key = BN_bn2hex(EC_KEY_get0_private_key(ca_key));
+    EVP_DigestUpdate(ctx, ca_priv_key, strlen(ca_priv_key));
+    EVP_DigestFinal_ex(ctx, priv_key, &priv_key_len);
+
+    EVP_MD_CTX_free(ctx);
+    BN_bin2bn(priv_key, priv_key_len, result);
+ 
+    return result;
+}
+
+static EC_POINT* ecqv_build_pubsub_public_key(const EC_GROUP* group, char** pubsub_pks, char** g_pks, size_t n, EC_POINT* Q_CAg)
+{
+    EC_POINT** pks = malloc(n * sizeof(EC_POINT*));
+    for (size_t i = 0; i < n; ++i) {
+        pks[i] = EC_POINT_new(group);
+        EC_POINT_hex2point(group, pubsub_pks[i], pks[i], NULL);
+    }
+
+    EC_POINT** g = malloc(n * sizeof(EC_POINT*));
+    for (size_t i = 0; i < n; ++i) {
+        g[i] = EC_POINT_new(group);
+        EC_POINT_hex2point(group, g_pks[i], g[i], NULL);
+    }
+
+
+    EC_POINT* acc = pks[0];
+    for (size_t i = 1; i < n; ++i) {
+        EC_POINT_add(group, acc, acc, pks[i], NULL);
+    }
+
+    for (size_t i = 0; i < n; ++i) {
+        EC_POINT_add(group, acc, acc, pks[i], NULL);
+    }
+
+    EC_POINT_add(group, acc, acc, Q_CAg, NULL);
+
+    return acc;
+}
+
+static BIGNUM* ecqv_build_pubsub_private_key(char** verify_nums, size_t n, BIGNUM *d_CAg)
+{
+    if (!n) {
+        return BN_new();
+    }
+
+    BIGNUM** verify = malloc(n * sizeof(BIGNUM*));
+    for (size_t i = 0; i < n; ++i) {
+        BN_hex2bn(&verify[i], verify_nums[i]);
+    }
+    BIGNUM* acc = verify[0];
+
+    for (size_t i = 1; i < n; ++i) {
+        BN_add(acc, acc, verify[i]);
+    }
+
+    BN_add(acc, acc, d_CAg);
+
+    return acc;
+}
+
+void ecqv_cert_group_generate(char* ca_path, char** ids, char** pubsub_pks, char** g_pks, char** verify_nums, size_t n)
+{
+    const EC_GROUP *group = EC_GROUP_new_by_curve_name(NID_secp256k1);
+
+    EC_KEY* ca_key = ecqv_import_pem(ca_path);
+    BIGNUM *d_CAg = ecqv_build_group_private_key(ca_key, ids, n);
+    EC_POINT *Q_CAg = ecqv_pk_extract_from_bn(group, d_CAg);
+
+    ecqv_build_pubsub_public_key(group, pubsub_pks, g_pks, n, Q_CAg);
+    ecqv_build_pubsub_private_key(verify_nums, n, d_CAg);
 }
