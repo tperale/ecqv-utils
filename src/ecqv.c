@@ -473,7 +473,8 @@ static BIGNUM* ecqv_build_pubsub_private_key(char** verify_nums, size_t n, BIGNU
 
     BIGNUM** verify = malloc(n * sizeof(BIGNUM*));
     for (size_t i = 0; i < n; ++i) {
-        BN_hex2bn(&verify[i], verify_nums[i]);
+        verify[i] = BN_new();
+        BN_hex2bn(&(verify[i]), verify_nums[i]);
     }
     BIGNUM* acc = verify[0];
 
