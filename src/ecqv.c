@@ -18,6 +18,18 @@
 
 #define ECQV_HASH EVP_sha1()
 
+static void ecqv_bn_print(const BIGNUM* bn) {
+    char *str = BN_bn2hex(bn);
+    printf("%s\n", str);
+    OPENSSL_free(str);
+}
+
+static void ecqv_point_print(const EC_GROUP* group, const EC_POINT* point) {
+    char *str = EC_POINT_point2hex(group, point, POINT_CONVERSION_UNCOMPRESSED, NULL);
+    printf("%s\n", str);
+    OPENSSL_free(str);
+}
+
 /**
  * @desc Import a key from a .pem file filename
  *
@@ -494,7 +506,10 @@ void ecqv_cert_group_generate(char* ca_path, char** ids, char** pubsub_pks, char
     EC_KEY* ca_key = ecqv_import_pem(ca_path);
     BIGNUM *d_CAg = ecqv_build_group_private_key(ca_key, ids, n);
     EC_POINT *Q_CAg = ecqv_pk_extract_from_bn(group, d_CAg);
+    ecqv_point_print(group, Q_CAg);
 
-    ecqv_build_pubsub_public_key(group, pubsub_pks, g_pks, n, Q_CAg);
-    ecqv_build_pubsub_private_key(verify_nums, n, d_CAg);
+    EC_POINT* pk = ecqv_build_pubsub_public_key(group, pubsub_pks, g_pks, n, Q_CAg);
+    ecqv_point_print(group, pk);
+    BIGNUM* priv = ecqv_build_pubsub_private_key(verify_nums, n, d_CAg);
+    ecqv_bn_print(priv);
 }
