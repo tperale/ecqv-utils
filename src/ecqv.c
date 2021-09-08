@@ -448,31 +448,32 @@ static BIGNUM* ecqv_build_group_private_key(EC_KEY* ca_key, char** ids, size_t i
     return result;
 }
 
-static EC_POINT* ecqv_build_pubsub_public_key(const EC_GROUP* group, char** pubsub_pks, char** g_pks, size_t n, EC_POINT* Q_CAg)
+static EC_POINT* ecqv_build_pubsub_public_key(const EC_GROUP* group, char** cert_pks, char** g_pks, size_t n, EC_POINT* Q_CAg)
 {
     EC_POINT** pks = malloc(n * sizeof(EC_POINT*));
-    for (size_t i = 0; i < n; ++i) {
-        pks[i] = EC_POINT_new(group);
-        EC_POINT_hex2point(group, pubsub_pks[i], pks[i], NULL);
-    }
-
     EC_POINT** g = malloc(n * sizeof(EC_POINT*));
     for (size_t i = 0; i < n; ++i) {
+        pks[i] = EC_POINT_new(group);
+        EC_POINT_hex2point(group, cert_pks[i], pks[i], NULL);
         g[i] = EC_POINT_new(group);
         EC_POINT_hex2point(group, g_pks[i], g[i], NULL);
     }
 
-
-    EC_POINT* acc = pks[0];
-    for (size_t i = 1; i < n; ++i) {
-        EC_POINT_add(group, acc, acc, pks[i], NULL);
-    }
-
+    EC_POINT* acc = EC_POINT_new(group);
     for (size_t i = 0; i < n; ++i) {
         EC_POINT_add(group, acc, acc, pks[i], NULL);
     }
 
+    for (size_t i = 0; i < n; ++i) {
+        EC_POINT_add(group, acc, acc, g[i], NULL);
+    }
+
     EC_POINT_add(group, acc, acc, Q_CAg, NULL);
+
+    for (size_t i = 0; i < n; ++i) {
+        EC_POINT_free(g[i]);
+        EC_POINT_free(pks[i]);
+    }
 
     return acc;
 }
@@ -488,28 +489,32 @@ static BIGNUM* ecqv_build_pubsub_private_key(char** verify_nums, size_t n, BIGNU
         verify[i] = BN_new();
         BN_hex2bn(&(verify[i]), verify_nums[i]);
     }
-    BIGNUM* acc = verify[0];
+    BIGNUM* acc = BN_new();
 
-    for (size_t i = 1; i < n; ++i) {
+    for (size_t i = 0; i < n; ++i) {
         BN_add(acc, acc, verify[i]);
     }
 
     BN_add(acc, acc, d_CAg);
 
+    for (size_t i = 0; i < n; ++i) {
+        BN_free(verify[i]);
+    }
+
     return acc;
 }
 
-void ecqv_cert_group_generate(char* ca_path, char** ids, char** pubsub_pks, char** g_pks, char** verify_nums, size_t n)
+void ecqv_cert_group_generate(char* ca_path, char** ids, char** cert_pks, char** g_pks, char** verify_nums, size_t n)
 {
     const EC_GROUP *group = EC_GROUP_new_by_curve_name(NID_secp256k1);
 
     EC_KEY* ca_key = ecqv_import_pem(ca_path);
     BIGNUM *d_CAg = ecqv_build_group_private_key(ca_key, ids, n);
     EC_POINT *Q_CAg = ecqv_pk_extract_from_bn(group, d_CAg);
-    ecqv_point_print(group, Q_CAg);
 
-    EC_POINT* pk = ecqv_build_pubsub_public_key(group, pubsub_pks, g_pks, n, Q_CAg);
-    ecqv_point_print(group, pk);
+    EC_POINT* pk = ecqv_build_pubsub_public_key(group, cert_pks, g_pks, n, Q_CAg);
     BIGNUM* priv = ecqv_build_pubsub_private_key(verify_nums, n, d_CAg);
+
+    ecqv_point_print(group, pk);
     ecqv_bn_print(priv);
 }
