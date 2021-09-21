@@ -17,8 +17,8 @@
 #define ECQV_PK_EXTRACT_CMD_INFO \
     "<CMD>: pk_extract\n" \
     "<Options>\n" \
-    "  -k <arg>     The PEM file containing the EC private key\n" \
-    "  -c <arg>     HEX formatted string of the EC private key\n" \
+    "  -c <arg>     The PEM file containing the EC private key\n" \
+    "  -k <arg>     HEX formatted string of the EC private key\n" \
     "\n"
 
 #define ECQV_CERT_REQUEST_CMD_INFO \
