@@ -158,6 +158,70 @@ static EC_POINT* ecqv_pk_extract_from_hex(const EC_GROUP *group, char* bn_hex) {
     return pk;
 }
 
+void print_b64(const char* msg, size_t len) {
+    BIO *b64 = BIO_new(BIO_f_base64());
+    BIO_set_flags(b64, 0);
+    BIO *bio = BIO_new_fp(stdout, BIO_NOCLOSE);
+    bio = BIO_push(b64, bio);
+    BIO_write(bio, msg, len);
+    (void)BIO_flush(bio);
+    BIO_free_all(bio);
+}
+
+void ecqv_decrypt_b64(const char* b64_msg, size_t length, char* out) {
+    BIO *b64 = BIO_new(BIO_f_base64());
+    BIO_set_flags(b64, 0);
+    BIO *bio = BIO_new_mem_buf(b64_msg, length);
+    bio = BIO_push(b64, bio);
+    int ret = BIO_read(bio, out, length);
+    printf("%i\n", ret);
+    BIO_free_all(bio);
+}
+
+char* ecqv_encrypt(const char* msg, const char* key) {
+    EVP_CIPHER_CTX *ctx;
+    unsigned char *iv = (unsigned char *)"0123456789012345";
+    unsigned char ciphertext[128];
+    int len;
+    int ciphertext_len = 0;
+
+    ctx = EVP_CIPHER_CTX_new();
+    EVP_EncryptInit_ex(ctx, EVP_aes_256_cbc(), NULL, (const unsigned char*) key, iv);
+    EVP_EncryptUpdate(ctx, ciphertext, &len, (const unsigned char*) msg, strlen((const char*) msg));
+
+    ciphertext_len = len;
+
+    EVP_EncryptFinal_ex(ctx, ciphertext + len, &len);
+    ciphertext_len += len;
+
+    print_b64((char*) ciphertext, ciphertext_len);
+
+    EVP_CIPHER_CTX_free(ctx);
+    /* return ciphertext_len; */
+}
+
+char* ecqv_decrypt(const char* msg, const char* key) {
+    EVP_CIPHER_CTX *ctx;
+    unsigned char *iv = (unsigned char *)"0123456789012345";
+    unsigned char ciphertext[128];
+    unsigned char plaintext[128];
+    int len;
+
+    ecqv_decrypt_b64(msg, strlen(msg), (char*) ciphertext);
+
+    printf("%li %li\n", strlen(msg), strlen((char*) ciphertext));
+    print_b64((char*) ciphertext, strlen((char*) ciphertext));
+
+    ctx = EVP_CIPHER_CTX_new();
+    EVP_DecryptInit_ex(ctx, EVP_aes_256_cbc(), NULL, (const unsigned char*) key, iv);
+    EVP_DecryptUpdate(ctx, (unsigned char*) plaintext, &len, (unsigned char*) ciphertext, 128);
+    EVP_DecryptFinal_ex(ctx, (unsigned char*) plaintext + len, &len);
+
+    EVP_CIPHER_CTX_free(ctx);
+
+    printf("%s\n", plaintext);
+}
+
 void ecqv_pk_extract(const struct ecqv_opt_t *opt) {
     const EC_GROUP *group;
     if (opt->ca_key) {
@@ -440,7 +504,7 @@ void ecqv_verify_confirmation(char* ca_path, char* cert_pk, char* g_pk, char* ve
     BN_CTX_free(ctx);
     BN_free(verif);
     EC_POINT_free(verif_priv);
-    EC_KEY_free(g);
+    EC_KEY_free(key);
 }
 
 static BIGNUM* ecqv_build_group_private_key(EC_KEY* ca_key, char** ids, size_t ids_len)

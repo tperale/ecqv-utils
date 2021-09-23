@@ -70,14 +70,14 @@ void ecqv_generate_confirmation(char* cert_private_key, char* ca_pk, char* g_pat
  *
  * @arg{opt} A struct containing the command line arguments.
  */
-void ecqv_verify_confirmation(char* cert_pk, char* g_pk, char* verification_number);
+void ecqv_verify_confirmation(char* ca_path, char* cert_pk, char* g_pk, char* verification_number);
 
 void ecqv_cert_group_generate(char* ca_priv_key, char** ids, char** pubsub_pks, char** g_pks, char** verify_nums, size_t n);
 
 void ecqv_sign(const struct ecqv_opt_t *opt);
 
-void ecqv_encrypt(const struct ecqv_opt_t *opt);
+char* ecqv_encrypt(const char* msg, const char* key);
 
-void ecqv_decrypt(const struct ecqv_opt_t *opt);
+char* ecqv_decrypt(const char* msg, const char* key);
 
 #endif
