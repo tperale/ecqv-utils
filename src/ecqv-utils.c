@@ -232,8 +232,11 @@ static void parse_cmd_options_verify_confirmation(int argc, char **argv)
     memset(&ecqv_opt, 0, sizeof(ecqv_opt));
     opterr = 0; /* To inhibit error messages */
 
-    while ((opt = getopt(argc, argv, "d:v:g:")) != -1) {
+    while ((opt = getopt(argc, argv, "k:d:v:g:")) != -1) {
         switch (opt) {
+            case 'k':
+                ecqv_opt.ca_key = optarg;
+                break;
             case 'd':
                 ecqv_opt.cert_pk = optarg;
                 break;
@@ -411,7 +414,7 @@ int main(int argc, char **argv)
         ecqv_generate_confirmation(ecqv_opt.cert_priv, ecqv_opt.ca_pk, ecqv_opt.g_path);
     } else if (strcmp(cmd, "verify_confirmation") == 0) {
         parse_cmd_options_verify_confirmation(argc, argv);
-        ecqv_verify_confirmation(ecqv_opt.cert_pk, ecqv_opt.g_pk, ecqv_opt.msg);
+        ecqv_verify_confirmation(ecqv_opt.ca_key, ecqv_opt.cert_pk, ecqv_opt.g_pk, ecqv_opt.msg);
     } else if (strcmp(cmd, "group_generate") == 0) {
         char* ca_path = NULL;
         char** ids = NULL;
