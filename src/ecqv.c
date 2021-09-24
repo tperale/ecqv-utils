@@ -168,17 +168,19 @@ void print_b64(const char* msg, size_t len) {
     BIO_free_all(bio);
 }
 
-void ecqv_decrypt_b64(const char* b64_msg, size_t length, char* out) {
+size_t ecqv_decrypt_b64(const char* b64_msg, size_t length, char* out) {
     BIO *b64 = BIO_new(BIO_f_base64());
-    BIO_set_flags(b64, 0);
+    /* BIO_set_flags(b64, 0); */
+    BIO_set_flags(b64, BIO_FLAGS_BASE64_NO_NL);
     BIO *bio = BIO_new_mem_buf(b64_msg, length);
     bio = BIO_push(b64, bio);
     int ret = BIO_read(bio, out, length);
-    printf("%i\n", ret);
+    out[ret] = '\0';
     BIO_free_all(bio);
+    return (size_t) ret;
 }
 
-char* ecqv_encrypt(const char* msg, const char* key) {
+void ecqv_encrypt(const char* msg, const char* key) {
     EVP_CIPHER_CTX *ctx;
     unsigned char *iv = (unsigned char *)"0123456789012345";
     unsigned char ciphertext[128];
@@ -200,26 +202,25 @@ char* ecqv_encrypt(const char* msg, const char* key) {
     /* return ciphertext_len; */
 }
 
-char* ecqv_decrypt(const char* msg, const char* key) {
+void ecqv_decrypt(const char* msg, const char* key) {
     EVP_CIPHER_CTX *ctx;
     unsigned char *iv = (unsigned char *)"0123456789012345";
     unsigned char ciphertext[128];
     unsigned char plaintext[128];
-    int len;
+    int len, cipher_len, plaintext_len;
 
-    ecqv_decrypt_b64(msg, strlen(msg), (char*) ciphertext);
-
-    printf("%li %li\n", strlen(msg), strlen((char*) ciphertext));
-    print_b64((char*) ciphertext, strlen((char*) ciphertext));
+    cipher_len = ecqv_decrypt_b64(msg, strlen(msg), (char*) ciphertext);
 
     ctx = EVP_CIPHER_CTX_new();
     EVP_DecryptInit_ex(ctx, EVP_aes_256_cbc(), NULL, (const unsigned char*) key, iv);
-    EVP_DecryptUpdate(ctx, (unsigned char*) plaintext, &len, (unsigned char*) ciphertext, 128);
+    EVP_DecryptUpdate(ctx, (unsigned char*) plaintext, &len, (unsigned char*) ciphertext, cipher_len);
+    plaintext_len = len;
     EVP_DecryptFinal_ex(ctx, (unsigned char*) plaintext + len, &len);
-
-    EVP_CIPHER_CTX_free(ctx);
+    plaintext_len += len;
+    plaintext[plaintext_len] = '\0';
 
     printf("%s\n", plaintext);
+    EVP_CIPHER_CTX_free(ctx);
 }
 
 void ecqv_pk_extract(const struct ecqv_opt_t *opt) {

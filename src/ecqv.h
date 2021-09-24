@@ -76,8 +76,8 @@ void ecqv_cert_group_generate(char* ca_priv_key, char** ids, char** pubsub_pks, 
 
 void ecqv_sign(const struct ecqv_opt_t *opt);
 
-char* ecqv_encrypt(const char* msg, const char* key);
+void ecqv_encrypt(const char* msg, const char* key);
 
-char* ecqv_decrypt(const char* msg, const char* key);
+void ecqv_decrypt(const char* msg, const char* key);
 
 #endif
