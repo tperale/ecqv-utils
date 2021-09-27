@@ -193,7 +193,7 @@ size_t ecqv_encrypt(const char* msg, const char* key, char* ciphertext) {
 
     ciphertext_len = len;
 
-    EVP_EncryptFinal_ex(ctx, ciphertext + len, &len);
+    EVP_EncryptFinal_ex(ctx, (unsigned char*) (ciphertext + len), &len);
     ciphertext_len += len;
 
     print_b64(ciphertext, ciphertext_len);
@@ -220,7 +220,6 @@ size_t ecqv_decrypt(const char* msg, const char* key, char* plaintext) {
     plaintext_len += len;
     plaintext[plaintext_len] = '\0';
 
-    /* printf("%s\n", plaintext); */
     EVP_CIPHER_CTX_free(ctx);
 
     return (size_t) plaintext_len;
@@ -501,12 +500,11 @@ void ecqv_verify_confirmation(char* ca_path, char* cert_pk, char* g_pk, char* ve
     char* received_verif_str = EC_POINT_point2hex(group, verif_priv, POINT_CONVERSION_UNCOMPRESSED, NULL);
     printf("%s\n%s\n", verif_str, received_verif_str);
 
-    BN_free(d_ca);
     EC_POINT_free(Q_i);
     EC_POINT_free(K);
     EC_POINT_free(G_i);
     BN_CTX_free(ctx);
-    BN_free(verif);
+    EC_POINT_free(verif);
     EC_POINT_free(verif_priv);
     EC_KEY_free(key);
 }
