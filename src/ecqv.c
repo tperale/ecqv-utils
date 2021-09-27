@@ -196,8 +196,6 @@ size_t ecqv_encrypt(const char* msg, const char* key, char* ciphertext) {
     EVP_EncryptFinal_ex(ctx, (unsigned char*) (ciphertext + len), &len);
     ciphertext_len += len;
 
-    print_b64(ciphertext, ciphertext_len);
-
     EVP_CIPHER_CTX_free(ctx);
 
     return (size_t) ciphertext_len;
@@ -447,15 +445,20 @@ void ecqv_generate_confirmation(char* cert_private_key, char* ca_pk, char* g_pat
     BN_CTX *ctx = BN_CTX_new();
     EC_POINT* K = EC_POINT_new(group);
     EC_POINT_mul(group, K, NULL, Q_ca, d_i, ctx);
-    char *sstr = EC_POINT_point2hex(group, K, POINT_CONVERSION_UNCOMPRESSED, NULL);
-    printf("%s\n", sstr);
+    char *K_str = EC_POINT_point2hex(group, K, POINT_CONVERSION_UNCOMPRESSED, NULL);
 
     // Step 3
     // Encrypt the verification calculated in `step 1` with the key from 
 
-    char *str = BN_bn2hex(verif);
-    printf("%s\n", str);
-    OPENSSL_free(str);
+    char *verif_str = BN_bn2hex(verif);
+    /* printf("%s\n", str); */
+
+    char output[128];
+    size_t output_len = ecqv_encrypt(verif_str, K_str, output);
+    print_b64(output, output_len);
+
+    OPENSSL_free(verif_str);
+    OPENSSL_free(K_str);
 
     EC_POINT_free(K);
     EC_POINT_free(Q_ca);
@@ -481,8 +484,11 @@ void ecqv_verify_confirmation(char* ca_path, char* cert_pk, char* g_pk, char* ve
     BN_CTX *ctx = BN_CTX_new();
     EC_POINT* K = EC_POINT_new(group);
     EC_POINT_mul(group, K, NULL, Q_i, d_ca, ctx);
-    char *sstr = EC_POINT_point2hex(group, K, POINT_CONVERSION_UNCOMPRESSED, NULL);
-    printf("%s\n", sstr);
+    char *K_str = EC_POINT_point2hex(group, K, POINT_CONVERSION_UNCOMPRESSED, NULL);
+
+    char decyphered_verif[128];
+    ecqv_decrypt(verification_number, K_str, decyphered_verif);
+    printf("%s\n", decyphered_verif);
 
     // Q_i + G_i
     EC_POINT *verif = EC_POINT_new(group);
@@ -490,7 +496,7 @@ void ecqv_verify_confirmation(char* ca_path, char* cert_pk, char* g_pk, char* ve
 
     // (d_i + g_i)G
     BIGNUM *received_verif = BN_new();
-    BN_hex2bn(&received_verif, verification_number);
+    BN_hex2bn(&received_verif, decyphered_verif);
     EC_POINT *verif_priv = EC_POINT_new(group);
     EC_POINT_mul(group, verif_priv, received_verif, NULL, NULL, NULL);
 
