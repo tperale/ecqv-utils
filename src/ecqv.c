@@ -180,33 +180,34 @@ size_t ecqv_decrypt_b64(const char* b64_msg, size_t length, char* out) {
     return (size_t) ret;
 }
 
-void ecqv_encrypt(const char* msg, const char* key) {
+size_t ecqv_encrypt(const char* msg, const char* key, char* ciphertext) {
     EVP_CIPHER_CTX *ctx;
     unsigned char *iv = (unsigned char *)"0123456789012345";
-    unsigned char ciphertext[128];
+    /* unsigned char ciphertext[128]; */
     int len;
     int ciphertext_len = 0;
 
     ctx = EVP_CIPHER_CTX_new();
     EVP_EncryptInit_ex(ctx, EVP_aes_256_cbc(), NULL, (const unsigned char*) key, iv);
-    EVP_EncryptUpdate(ctx, ciphertext, &len, (const unsigned char*) msg, strlen((const char*) msg));
+    EVP_EncryptUpdate(ctx, (unsigned char*) ciphertext, &len, (const unsigned char*) msg, strlen((const char*) msg));
 
     ciphertext_len = len;
 
     EVP_EncryptFinal_ex(ctx, ciphertext + len, &len);
     ciphertext_len += len;
 
-    print_b64((char*) ciphertext, ciphertext_len);
+    print_b64(ciphertext, ciphertext_len);
 
     EVP_CIPHER_CTX_free(ctx);
-    /* return ciphertext_len; */
+
+    return (size_t) ciphertext_len;
 }
 
-void ecqv_decrypt(const char* msg, const char* key) {
+size_t ecqv_decrypt(const char* msg, const char* key, char* plaintext) {
     EVP_CIPHER_CTX *ctx;
     unsigned char *iv = (unsigned char *)"0123456789012345";
     unsigned char ciphertext[128];
-    unsigned char plaintext[128];
+    /* unsigned char plaintext[128]; */
     int len, cipher_len, plaintext_len;
 
     cipher_len = ecqv_decrypt_b64(msg, strlen(msg), (char*) ciphertext);
@@ -219,8 +220,10 @@ void ecqv_decrypt(const char* msg, const char* key) {
     plaintext_len += len;
     plaintext[plaintext_len] = '\0';
 
-    printf("%s\n", plaintext);
+    /* printf("%s\n", plaintext); */
     EVP_CIPHER_CTX_free(ctx);
+
+    return (size_t) plaintext_len;
 }
 
 void ecqv_pk_extract(const struct ecqv_opt_t *opt) {

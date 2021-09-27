@@ -465,12 +465,16 @@ int main(int argc, char **argv)
         char* msg = NULL;
         char* key = NULL;
         parse_cmd_options_encrypt(argc, argv, &msg, &key);
-        ecqv_encrypt(msg, key);
+        char result[128];
+        size_t len = ecqv_encrypt(msg, key, result);
+        print_b64(result, len);
     } else if (strcmp(cmd, "decrypt") == 0) {
         char* msg = NULL;
         char* key = NULL;
         parse_cmd_options_encrypt(argc, argv, &msg, &key);
-        ecqv_decrypt(msg, key);
+        char result[128];
+        ecqv_decrypt(msg, key, result);
+        printf("%s\n", result);
     } else {
         print_usage_and_exit();
     }
