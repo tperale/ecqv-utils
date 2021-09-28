@@ -66,6 +66,23 @@ static EC_KEY *ecqv_import_pem(char* filename)
     return key;
 }
 
+
+static const EC_POINT* import_public_key(const EC_GROUP *group, char* ca_pk)
+{
+    if (access(ca_pk, F_OK) == 0) {
+        EC_KEY *key = ecqv_import_pem(ca_pk);
+        if (key == NULL) {
+            exit(EXIT_FAILURE);
+        }
+        EC_KEY_free(key);
+        return EC_KEY_get0_public_key(key);
+    } else {
+        EC_POINT* pk = EC_POINT_new(group);
+        EC_POINT_hex2point(group, ca_pk, pk, NULL);
+        return pk;
+    }
+}
+
 /**
  * @desc Import a string in the HEX format representing an EC public key.
  *
@@ -425,8 +442,7 @@ void ecqv_sign(const struct ecqv_opt_t *opt) {
 
 void ecqv_generate_confirmation(char* cert_private_key, char* ca_pk, char* g_path) {
     const EC_GROUP *group = EC_GROUP_new_by_curve_name(NID_secp256k1);
-    EC_POINT *Q_ca = EC_POINT_new(group);
-    EC_POINT_hex2point(group, ca_pk, Q_ca, NULL);
+    EC_POINT *Q_ca = import_public_key(group, ca_pk);
     BIGNUM *d_i = BN_new();
     BN_hex2bn(&d_i, cert_private_key);
     EC_KEY *g = ecqv_import_pem(g_path);
@@ -488,7 +504,6 @@ void ecqv_verify_confirmation(char* ca_path, char* cert_pk, char* g_pk, char* ve
 
     char decyphered_verif[128];
     ecqv_decrypt(verification_number, K_str, decyphered_verif);
-    printf("%s\n", decyphered_verif);
 
     // Q_i + G_i
     EC_POINT *verif = EC_POINT_new(group);
