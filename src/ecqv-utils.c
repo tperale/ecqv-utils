@@ -99,15 +99,21 @@ static size_t parse_cmd_list(char* input, char*** output)
     int len;
     char* s;
     for (len = 0, s = input; s[len]; s[len] == ',' ? len++ : *s++);
+    int input_len = s - input;
+    len++;
 
-    size_t length = (size_t) (len + 1);
-    *output = malloc(sizeof(char*) * length);
+    *output = malloc(sizeof(char*) * len);
 
-    size_t n = 0;
-    (*output)[n] = strtok(input, ",");
-    while((*output)[n] && n < length) (*output)[++n] = strtok(NULL, ",");
+    (*output)[0] = input;
+    for (int i = 0, n = 1; i < input_len && n < len; i++) {
+        if (input[i] == ',') {
+            (*output)[n] = (input + i + 1);
+            input[i] = '\0';
+            n++;
+        }
+    }
 
-    return length;
+    return len;
 }
 
 static void parse_cmd_options_pk_extract(int argc, char **argv)
