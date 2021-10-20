@@ -1,4 +1,5 @@
 #include "ecqv.h"
+#include "utils.h"
 
 #include <openssl/crypto.h>
 #include <openssl/ossl_typ.h>
@@ -17,87 +18,6 @@
 #include <openssl/evp.h>
 
 #define ECQV_HASH EVP_sha1()
-
-static void ecqv_bn_print(const BIGNUM* bn) {
-    char *str = BN_bn2hex(bn);
-    printf("%s\n", str);
-    OPENSSL_free(str);
-}
-
-static void ecqv_point_print(const EC_GROUP* group, const EC_POINT* point) {
-    char *str = EC_POINT_point2hex(group, point, POINT_CONVERSION_UNCOMPRESSED, NULL);
-    printf("%s\n", str);
-    OPENSSL_free(str);
-}
-
-/**
- * @desc Import a key from a .pem file filename
- *
- * @args{filename}
- *
- * @return
- */
-static EC_KEY *ecqv_import_pem(char* filename)
-{
-    FILE *file;
-    EVP_PKEY *pk;
-    EC_KEY *key;
-
-    if ((file = fopen(filename, "rb")) == 0) {
-        fprintf(stderr, "Error opening file '%s': %s.\n", filename, strerror(errno));
-        exit(EXIT_FAILURE);
-    }
-
-    if ((pk = PEM_read_PrivateKey(file, NULL, NULL, NULL)) == 0) {
-        fprintf(stderr, "Error importing the .PEM file with the private key.\n");
-        fclose(file);
-        exit(EXIT_FAILURE);
-    }
-
-    if ((key = EVP_PKEY_get1_EC_KEY(pk)) == 0) {
-        fprintf(stderr, "Error loading EC private key from EVP_PKEY.\n");
-        fclose(file);
-        EVP_PKEY_free(pk);
-        exit(EXIT_FAILURE);
-    }
-
-    fclose(file);
-    EVP_PKEY_free(pk);
-    return key;
-}
-
-
-static const EC_POINT* import_public_key(const EC_GROUP *group, char* ca_pk)
-{
-    if (access(ca_pk, F_OK) == 0) {
-        EC_KEY *key = ecqv_import_pem(ca_pk);
-        if (key == NULL) {
-            exit(EXIT_FAILURE);
-        }
-        EC_KEY_free(key);
-        return EC_KEY_get0_public_key(key);
-    } else {
-        EC_POINT* pk = EC_POINT_new(group);
-        EC_POINT_hex2point(group, ca_pk, pk, NULL);
-        return pk;
-    }
-}
-
-/**
- * @desc Import a string in the HEX format representing an EC public key.
- *
- * @args{group}
- * @args{pk_str} Hex format public key string
- *
- * @return Point on the curve representing the public key.
- */
-static EC_POINT *ecqv_import_point(const EC_GROUP *group, char* pk_str)
-{
-    EC_POINT *pk = EC_POINT_new(group);
-    EC_POINT_hex2point(group, pk_str, pk, NULL);
-
-    return pk;
-}
 
 static BIGNUM* ecqv_hash_implicit_cert(const EC_GROUP* group, EC_POINT* P_u, char* U)
 {
@@ -158,43 +78,6 @@ static EC_POINT* ecqv_import_implicit_cert(const EC_GROUP *group, char* cert_str
     EC_POINT_hex2point(group, cert_str, point, NULL);
 
     return point;
-}
-
-static EC_POINT* ecqv_pk_extract_from_bn(const EC_GROUP *group, BIGNUM* bn) {
-    EC_POINT* pk = EC_POINT_new(group);
-    EC_POINT_mul(group, pk, bn, NULL, NULL, NULL);
-    return pk;
-}
-
-static EC_POINT* ecqv_pk_extract_from_hex(const EC_GROUP *group, char* bn_hex) {
-    BIGNUM *priv_k = BN_new();
-    BN_hex2bn(&priv_k, bn_hex);
-    EC_POINT* pk = EC_POINT_new(group);
-    EC_POINT_mul(group, pk, priv_k, NULL, NULL, NULL);
-    BN_free(priv_k);
-    return pk;
-}
-
-void print_b64(const char* msg, size_t len) {
-    BIO *b64 = BIO_new(BIO_f_base64());
-    BIO_set_flags(b64, 0);
-    BIO *bio = BIO_new_fp(stdout, BIO_NOCLOSE);
-    bio = BIO_push(b64, bio);
-    BIO_write(bio, msg, len);
-    (void)BIO_flush(bio);
-    BIO_free_all(bio);
-}
-
-size_t ecqv_decrypt_b64(const char* b64_msg, size_t length, char* out) {
-    BIO *b64 = BIO_new(BIO_f_base64());
-    /* BIO_set_flags(b64, 0); */
-    BIO_set_flags(b64, BIO_FLAGS_BASE64_NO_NL);
-    BIO *bio = BIO_new_mem_buf(b64_msg, length);
-    bio = BIO_push(b64, bio);
-    int ret = BIO_read(bio, out, length);
-    out[ret] = '\0';
-    BIO_free_all(bio);
-    return (size_t) ret;
 }
 
 size_t ecqv_encrypt(const char* msg, const char* key, char* ciphertext) {
@@ -443,6 +326,7 @@ void ecqv_sign(const struct ecqv_opt_t *opt) {
 void ecqv_generate_confirmation(char* cert_private_key, char* ca_pk, char* g_path) {
     const EC_GROUP *group = EC_GROUP_new_by_curve_name(NID_secp256k1);
     EC_POINT *Q_ca = import_public_key(group, ca_pk);
+    ecqv_point_print(group, Q_ca);
     BIGNUM *d_i = BN_new();
     BN_hex2bn(&d_i, cert_private_key);
     EC_KEY *g = ecqv_import_pem(g_path);

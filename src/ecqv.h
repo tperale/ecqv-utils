@@ -80,7 +80,4 @@ size_t ecqv_encrypt(const char* msg, const char* key, char* ciphertext);
 
 size_t ecqv_decrypt(const char* msg, const char* key, char* plaintext);
 
-void print_b64(const char* msg, size_t len);
-size_t ecqv_decrypt_b64(const char* b64_msg, size_t length, char* out);
-
 #endif

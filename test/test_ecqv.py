@@ -133,7 +133,9 @@ IDENTITY_ = "11111"
 
 class TestEcqv(unittest.TestCase):
     def test_public_key(self):
-        ecqv_pem_pk_extract(ECQV_PATH, CA_PATH)
+        PK = "043E15031CAD572A280EFBE3E6B43F3D0D4859D32754C7AE8CBF86433802AA05BBA1FDFD401C95B7B6E30AEC55FBD4A9D601F8EE324BE916ECAC6F334565F28D36"
+        pk = ecqv_pem_pk_extract(ECQV_PATH, CA_PATH)
+        self.assertEqual(PK, pk)
 
     def test_cert_request(self):
         ca_pub = ecqv_pem_pk_extract(ECQV_PATH, CA_PATH)
@@ -178,8 +180,6 @@ class TestEcqv(unittest.TestCase):
 
         priv, pub = ecqv_group_generate(ECQV_PATH, CA_PATH, [IDENTITY], [
                                         g_pub], [cert_pub], [decrypted_conf])
-        print(priv)
-        print(pub)
 
         self.assertEqual(priv, ecqv_pk_extract(ECQV_PATH, pub))
 
@@ -215,8 +215,6 @@ class TestEcqv(unittest.TestCase):
 
         priv, pub = ecqv_group_generate(ECQV_PATH, CA_PATH, [IDENTITY, IDENTITY_], [
                                         g_pub, _g_pub], [cert_pub, _cert_pub], [decrypted_conf, _decrypted_conf])
-        print(priv)
-        print(pub)
 
         self.assertEqual(priv, ecqv_pk_extract(ECQV_PATH, pub))
 
@@ -224,10 +222,21 @@ class TestEcqv(unittest.TestCase):
         KEY = "04B868B4B5491E2A1E9530248EFF926C800609A1F541C14DBB566368CC2989E4D0BAE4F55D3E07BF63692132992CFE4381FC535AC717EA6BA232CD24F2DFA27DF8"
         BASE_MESSAGE = "hello"
         enc = ecqv_encrypt(ECQV_PATH, KEY, BASE_MESSAGE)
-        print("heeeeeeeeeeeeeere")
-        print(enc)
         dec = ecqv_decrypt(ECQV_PATH, KEY, enc)
         self.assertEqual(BASE_MESSAGE, dec)
+
+    def test_import_public_key(self):
+        ca_pub = ecqv_pem_pk_extract(ECQV_PATH, CA_PATH)
+        g_pub = ecqv_pem_pk_extract(ECQV_PATH, G_PATH)
+        req = ecqv_cert_request(ECQV_PATH, IDENTITY_, CL_PATH)
+        cert, r = ecqv_cert_generate(ECQV_PATH, IDENTITY, req, CA_PATH)
+        cert_priv = ecqv_cert_reception(
+            ECQV_PATH, IDENTITY, CL_PATH, ca_pub, cert, r)
+        cert_pub = ecqv_pk_extract(ECQV_PATH, cert_priv)
+        OUT1 = ecqv_generate_confirmation(ECQV_PATH, ca_pub, cert_priv, G_PATH)
+        OUT2 = ecqv_generate_confirmation(
+            ECQV_PATH, CA_PATH, cert_priv, G_PATH)
+        self.assertEqual(OUT1, OUT2)
 
 
 if __name__ == "__main__":
