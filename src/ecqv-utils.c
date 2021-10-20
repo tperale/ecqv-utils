@@ -5,6 +5,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <getopt.h>
+#include "utils.h"
 
 #define ECQV_KG_VERSION "0.1"
 
