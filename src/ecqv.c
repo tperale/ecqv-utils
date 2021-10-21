@@ -61,30 +61,6 @@ static EC_POINT* ecqv_import_implicit_cert(const EC_GROUP *group, char* cert_str
     return point;
 }
 
-void ecqv_pk_extract(const struct ecqv_opt_t *opt) {
-    const EC_GROUP *group;
-    if (opt->ca_key) {
-        EC_KEY *key = ecqv_import_pem(opt->ca_key);
-        group = EC_KEY_get0_group(key);
-
-        char *str = EC_POINT_point2hex(group, EC_KEY_get0_public_key(key), POINT_CONVERSION_UNCOMPRESSED, NULL);
-        printf("%s\n", str);
-        OPENSSL_free(str);
-    } else if (opt->ca_pk) {
-        group = EC_GROUP_new_by_curve_name(NID_secp256k1);
-        EC_POINT* pk = ecqv_pk_extract_from_hex(group, opt->ca_pk);
-
-        char *str = EC_POINT_point2hex(group, pk, POINT_CONVERSION_UNCOMPRESSED, NULL);
-        printf("%s\n", str);
-        OPENSSL_free(str);
-    } else {
-        fprintf(stderr, "No CA private key given.\n");
-        return;
-    }
-
-    fflush(stdout);
-}
-
 void ecqv_cert_request(char* requester_key_path) {
     EC_KEY *key;
     

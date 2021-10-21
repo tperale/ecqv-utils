@@ -19,7 +19,6 @@ struct ecqv_opt_t {
     char *cert_pk;
 };
 
-void ecqv_pk_extract(const struct ecqv_opt_t *opt);
 void ecqv_export_ca_generator(const struct ecqv_opt_t *opt);
 
 /**

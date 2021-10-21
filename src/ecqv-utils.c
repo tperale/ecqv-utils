@@ -50,13 +50,13 @@ static size_t parse_cmd_list(char* input, char*** output)
 }
 
 #define ECQV_PK_EXTRACT_CMD_INFO \
-    "<CMD>: pk_extract\n" \
+    "<CMD>: <pk_extract - priv_extract>\n" \
     "<Options>\n" \
     "  -c <arg>     The PEM file containing the EC private key\n" \
     "  -k <arg>     HEX formatted string of the EC private key\n" \
     "\n"
 
-static void parse_cmd_options_pk_extract(int argc, char **argv)
+static void parse_cmd_options_pk_extract(int argc, char **argv, char** key)
 {
     int opt;
 
@@ -69,10 +69,10 @@ static void parse_cmd_options_pk_extract(int argc, char **argv)
     while ((opt = getopt(argc, argv, "k:c:")) != -1) {
         switch (opt) {
             case 'k':
-                ecqv_opt.ca_pk = optarg;
+                *key = optarg;
                 break;
             case 'c':
-                ecqv_opt.ca_key = optarg;
+                *key = optarg;
                 break;
             default:
                 /* If unknown option print info */
@@ -81,7 +81,7 @@ static void parse_cmd_options_pk_extract(int argc, char **argv)
         }
     }
 
-    if (!ecqv_opt.ca_key && !ecqv_opt.ca_pk) {
+    if (!*key) {
         fprintf(stderr, ECQV_PK_EXTRACT_CMD_INFO);
         exit(EXIT_FAILURE);
     }
@@ -488,8 +488,13 @@ int main(int argc, char **argv)
     argv++;
 
     if (strcmp(cmd, "pk_extract") == 0) {
-        parse_cmd_options_pk_extract(argc, argv);
-        ecqv_pk_extract(&ecqv_opt);
+        char* key = NULL;
+        parse_cmd_options_pk_extract(argc, argv, &key);
+        ecqv_pk_extract(key);
+    } else if (strcmp(cmd, "priv_extract") == 0) {
+        char* key = NULL;
+        parse_cmd_options_pk_extract(argc, argv, &key);
+        ecqv_priv_extract(key);
     } else if (strcmp(cmd, "cert_request") == 0) {
         parse_cmd_options_cert_request(argc, argv);
         ecqv_cert_request(ecqv_opt.requester_key);
