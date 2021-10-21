@@ -56,18 +56,18 @@ EC_KEY *ecqv_import_pem(char* filename)
 }
 
 
-EC_POINT* import_public_key(const EC_GROUP *group, char* ca_pk)
+EC_POINT* import_public_key(const EC_GROUP *group, char* key_str)
 {
     EC_POINT* pk = EC_POINT_new(group);
-    if (access(ca_pk, F_OK) == 0) {
-        EC_KEY *key = ecqv_import_pem(ca_pk);
+    if (access(key_str, F_OK) == 0) {
+        EC_KEY *key = ecqv_import_pem(key_str);
         if (key == NULL) {
             exit(EXIT_FAILURE);
         }
         EC_POINT_copy(pk, EC_KEY_get0_public_key(key));
         EC_KEY_free(key);
     } else {
-        EC_POINT_hex2point(group, ca_pk, pk, NULL);
+        EC_POINT_hex2point(group, key_str, pk, NULL);
     }
     return pk;
 }

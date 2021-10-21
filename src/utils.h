@@ -17,7 +17,7 @@ void ecqv_point_print(const EC_GROUP* group, const EC_POINT* point);
  */
 EC_KEY *ecqv_import_pem(char* filename);
 
-EC_POINT* import_public_key(const EC_GROUP *group, char* ca_pk);
+EC_POINT* import_public_key(const EC_GROUP *group, char* pk);
 
 BIGNUM* import_priv_key(char* priv_str);
 
