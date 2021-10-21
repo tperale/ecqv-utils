@@ -29,63 +29,80 @@ static BIGNUM* schnorr_hash(const EC_GROUP *group, char* msg, EC_POINT* V) {
 }
 
 
-void schnorr_sign(char* priv_key_hex, char* message) {
+static BIGNUM* _schnorr_sign(const EC_GROUP *group, BIGNUM* priv, BIGNUM* rand, char* message) {
     BN_CTX *ctx = BN_CTX_new();
+    BIGNUM* order = BN_new();
+    EC_GROUP_get_order(group, order, NULL);
+    EC_POINT *rand_pub = EC_POINT_new(group);
+    BIGNUM* hds = BN_new();
+    BIGNUM* schnorr_sign = BN_new();
+
+    // Get the public key from the random number
+    EC_POINT_mul(group, rand_pub, rand, NULL, NULL, ctx);
+
+    BIGNUM* h = schnorr_hash(group, message, rand_pub);
+   
+    BN_mod_mul(hds, h, priv, order, ctx);
+
+    BN_mod_sub(schnorr_sign, rand, hds, order, ctx);
+
+    BN_free(h);
+    BN_free(hds);
+    EC_POINT_free(rand_pub);
+    BN_free(order);
+    BN_CTX_free(ctx);
+
+    return schnorr_sign;
+}
+
+void schnorr_sign(char* priv_key, char* message) {
     const EC_GROUP *group = EC_GROUP_new_by_curve_name(NID_secp256k1);
     BIGNUM* order = BN_new();
     EC_GROUP_get_order(group, order, NULL);
-    EC_KEY* _keypair = ecqv_import_pem(priv_key_hex);
-    const BIGNUM* priv = EC_KEY_get0_private_key(_keypair);
-
+    BIGNUM* priv = import_priv_key(priv_key);
     BIGNUM* v = BN_new();
-    EC_POINT *vG = EC_POINT_new(group);
-
     BN_rand_range(v, order);
-    EC_POINT_mul(group, vG, v, NULL, NULL, ctx); // Calculate the private key using the same generator as the CA key
 
-    BIGNUM* h = schnorr_hash(group, message, vG);
-   
-    BIGNUM* hds = BN_new();
-    /* BN_mul(hds, h, priv, ctx); */
-    BN_mod_mul(hds, h, priv, order, ctx);
+    BIGNUM* sign = _schnorr_sign(group, priv, v, message);
 
-    BIGNUM* schnorr_sign = BN_new();
-    /* BN_sub(schnorr_sign, v, hds); */
-    BN_mod_sub(schnorr_sign, v, hds, order, ctx);
-
+    EC_POINT* vG = EC_POINT_new(group);
+    EC_POINT_mul(group, vG, v, NULL, NULL, NULL);
     ecqv_point_print(group, vG);
-    ecqv_bn_print(schnorr_sign);
+    ecqv_bn_print(sign);
 
-    EC_POINT* puub = EC_POINT_new(group);
-    EC_POINT_mul(group, puub, schnorr_sign, NULL, NULL, NULL);
-    ecqv_point_print(group, puub);
-
-    BN_free(v);
-    BN_free(hds);
-    EC_KEY_free(_keypair);
+    BN_free(sign);
     BN_free(order);
+    BN_free(priv);
+    BN_free(v);
+}
+
+static EC_POINT* _schnorr_verify(const EC_GROUP* group, EC_POINT* pub, EC_POINT* rand_pub, BIGNUM* schnorr_sign, char* message) {
+    BN_CTX *ctx = BN_CTX_new();
+    EC_POINT* res = EC_POINT_new(group);
+
+    BIGNUM* h = schnorr_hash(group, message, rand_pub);
+    EC_POINT_mul(group, res, schnorr_sign, pub, h, ctx);
+
     BN_CTX_free(ctx);
+
+    return res;
 }
 
 void schnorr_verify(char* pub_key, char* v_pub_hex, char* schnorr_sign, char* message) {
-    BN_CTX *ctx = BN_CTX_new();
     const EC_GROUP *group = EC_GROUP_new_by_curve_name(NID_secp256k1);
-    EC_POINT *res = EC_POINT_new(group);
     BIGNUM* order = BN_new();
     EC_GROUP_get_order(group, order, NULL);
     EC_POINT* pub = import_public_key(group, pub_key);
     BIGNUM* sign = import_priv_key(schnorr_sign);
     EC_POINT *V = ecqv_import_point(group, v_pub_hex);
 
-    BIGNUM* h = schnorr_hash(group, message, V);
-    EC_POINT_mul(group, res, sign, pub, h, ctx);
-
-    ecqv_point_print(group, res);
+    EC_POINT *res = _schnorr_verify(group, pub, V, sign, message);
+    
+    printf("%i\n", !EC_POINT_cmp(group, res, V, NULL));
 
     EC_POINT_free(V);
     BN_free(sign);
     EC_POINT_free(pub);
     BN_free(order);
     EC_POINT_free(res);
-    BN_CTX_free(ctx);
 }
