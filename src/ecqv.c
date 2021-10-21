@@ -233,7 +233,6 @@ void ecqv_cert_pk_extract(const struct ecqv_opt_t *opt) {
 void ecqv_generate_confirmation(char* cert_private_key, char* ca_pk, char* g_path) {
     const EC_GROUP *group = EC_GROUP_new_by_curve_name(NID_secp256k1);
     EC_POINT *Q_ca = import_public_key(group, ca_pk);
-    ecqv_point_print(group, Q_ca);
     BIGNUM *d_i = BN_new();
     BN_hex2bn(&d_i, cert_private_key);
     EC_KEY *g = ecqv_import_pem(g_path);
@@ -256,9 +255,7 @@ void ecqv_generate_confirmation(char* cert_private_key, char* ca_pk, char* g_pat
 
     // Step 3
     // Encrypt the verification calculated in `step 1` with the key from 
-
     char *verif_str = BN_bn2hex(verif);
-    /* printf("%s\n", str); */
 
     char output[128];
     size_t output_len = ecqv_encrypt(verif_str, K_str, output);
@@ -293,7 +290,7 @@ void ecqv_verify_confirmation(char* ca_path, char* cert_pk, char* g_pk, char* ve
     EC_POINT_mul(group, K, NULL, Q_i, d_ca, ctx);
     char *K_str = EC_POINT_point2hex(group, K, POINT_CONVERSION_UNCOMPRESSED, NULL);
 
-    char decyphered_verif[128];
+    char decyphered_verif[256];
     ecqv_decrypt(verification_number, K_str, decyphered_verif);
 
     // Q_i + G_i

@@ -64,7 +64,7 @@ size_t ecqv_encrypt(const char* msg, const char* key, char* ciphertext) {
 size_t ecqv_decrypt(const char* msg, const char* key, char* plaintext) {
     EVP_CIPHER_CTX *ctx;
     unsigned char *iv = (unsigned char *)"0123456789012345";
-    unsigned char ciphertext[128];
+    unsigned char ciphertext[256];
     int len, cipher_len, plaintext_len;
 
     cipher_len = ecqv_decrypt_b64(msg, strlen(msg), (char*) ciphertext);

@@ -12,13 +12,13 @@ _CL_PATH = TEST_PATH + "_cl_key.pem"
 _G_PATH = TEST_PATH + "_g_key.pem"
 
 
-def ecqv_pem_pk_extract(ecqv_utils_path, key_path):
-    s = os.popen("%s pk_extract -c %s" % (ecqv_utils_path, key_path))
+def ecqv_pk_extract(ecqv_utils_path, priv):
+    s = os.popen("%s pk_extract -k %s" % (ecqv_utils_path, priv))
     return s.read().strip()
 
 
-def ecqv_pk_extract(ecqv_utils_path, priv):
-    s = os.popen("%s pk_extract -k %s" % (ecqv_utils_path, priv))
+def ecqv_priv_extract(ecqv_utils_path, priv):
+    s = os.popen("%s priv_extract -k %s" % (ecqv_utils_path, priv))
     return s.read().strip()
 
 
@@ -65,6 +65,17 @@ def ecqv_generate_confirmation(ecqv_utils_path, ca_pk, cert_priv_key, g_path):
 
 
 def ecqv_verify_confirmation(ecqv_utils_path, verify, cert_pk, g_pk, ca_path):
+    print(
+        "%s verify_confirmation -v %s -d %s -g %s -k %s"
+        % (
+            ecqv_utils_path,
+            verify,
+            cert_pk,
+            g_pk,
+            ca_path,
+        )
+    )
+
     s = os.popen(
         "%s verify_confirmation -v %s -d %s -g %s -k %s"
         % (
@@ -134,15 +145,18 @@ IDENTITY_ = "11111"
 class TestEcqv(unittest.TestCase):
     def test_public_key(self):
         PK = "043E15031CAD572A280EFBE3E6B43F3D0D4859D32754C7AE8CBF86433802AA05BBA1FDFD401C95B7B6E30AEC55FBD4A9D601F8EE324BE916ECAC6F334565F28D36"
-        pk = ecqv_pem_pk_extract(ECQV_PATH, CA_PATH)
+        pk = ecqv_pk_extract(ECQV_PATH, CA_PATH)
         self.assertEqual(PK, pk)
 
+    def test_priv_key(self):
+        pk = ecqv_pk_extract(ECQV_PATH, CA_PATH)
+        priv = ecqv_priv_extract(ECQV_PATH, CA_PATH)
+        self.assertEqual(pk, ecqv_pk_extract(ECQV_PATH, priv))
+
     def test_cert_request(self):
-        ca_pub = ecqv_pem_pk_extract(ECQV_PATH, CA_PATH)
+        ca_pub = ecqv_pk_extract(ECQV_PATH, CA_PATH)
         req = ecqv_cert_request(ECQV_PATH, IDENTITY, CL_PATH)
-        print(req)
         cert, r = ecqv_cert_generate(ECQV_PATH, IDENTITY, req, CA_PATH)
-        print(cert)
         cert_priv = ecqv_cert_reception(
             ECQV_PATH, IDENTITY, CL_PATH, ca_pub, cert, r)
         cert_pub = ecqv_pk_extract(ECQV_PATH, cert_priv)
@@ -150,23 +164,25 @@ class TestEcqv(unittest.TestCase):
         self.assertEqual(cert_pub, cert_pub_)
 
     def test_cert_confirmation(self):
-        ca_pub = ecqv_pem_pk_extract(ECQV_PATH, CA_PATH)
-        g_pub = ecqv_pem_pk_extract(ECQV_PATH, G_PATH)
+        ca_pub = ecqv_pk_extract(ECQV_PATH, CA_PATH)
+        g_pub = ecqv_pk_extract(ECQV_PATH, G_PATH)
         req = ecqv_cert_request(ECQV_PATH, IDENTITY_, CL_PATH)
         cert, r = ecqv_cert_generate(ECQV_PATH, IDENTITY, req, CA_PATH)
         cert_priv = ecqv_cert_reception(
             ECQV_PATH, IDENTITY, CL_PATH, ca_pub, cert, r)
         cert_pub = ecqv_pk_extract(ECQV_PATH, cert_priv)
+        self.assertEqual(cert_pub, ecqv_pk_extract(ECQV_PATH, cert_priv))
         conf = ecqv_generate_confirmation(ECQV_PATH, ca_pub, cert_priv, G_PATH)
+        print("heeeeeeeeeeeeeeeeeere ", conf)
         decrypted_conf = ecqv_verify_confirmation(
             ECQV_PATH, conf, cert_pub, g_pub, CA_PATH)
         self.assertIsNotNone(decrypted_conf)
 
     def test_group_generation(self):
-        ca_pub = ecqv_pem_pk_extract(ECQV_PATH, CA_PATH)
+        ca_pub = ecqv_pk_extract(ECQV_PATH, CA_PATH)
 
         # FIRST PARTICIPANT
-        g_pub = ecqv_pem_pk_extract(ECQV_PATH, G_PATH)
+        g_pub = ecqv_pk_extract(ECQV_PATH, G_PATH)
         req = ecqv_cert_request(ECQV_PATH, IDENTITY, CL_PATH)
         cert, r = ecqv_cert_generate(ECQV_PATH, IDENTITY, req, CA_PATH)
         cert_priv = ecqv_cert_reception(
@@ -184,10 +200,10 @@ class TestEcqv(unittest.TestCase):
         self.assertEqual(priv, ecqv_pk_extract(ECQV_PATH, pub))
 
     def test_group_generation_second(self):
-        ca_pub = ecqv_pem_pk_extract(ECQV_PATH, CA_PATH)
+        ca_pub = ecqv_pk_extract(ECQV_PATH, CA_PATH)
 
         # FIRST PARTICIPANT
-        g_pub = ecqv_pem_pk_extract(ECQV_PATH, G_PATH)
+        g_pub = ecqv_pk_extract(ECQV_PATH, G_PATH)
         req = ecqv_cert_request(ECQV_PATH, IDENTITY, CL_PATH)
         cert, r = ecqv_cert_generate(ECQV_PATH, IDENTITY, req, CA_PATH)
         cert_priv = ecqv_cert_reception(
@@ -200,7 +216,7 @@ class TestEcqv(unittest.TestCase):
         self.assertIsNotNone(decrypted_conf)
 
         # SECOND PARTICIPANT
-        _g_pub = ecqv_pem_pk_extract(ECQV_PATH, _G_PATH)
+        _g_pub = ecqv_pk_extract(ECQV_PATH, _G_PATH)
         _req = ecqv_cert_request(ECQV_PATH, IDENTITY_, _CL_PATH)
         _cert, _r = ecqv_cert_generate(ECQV_PATH, IDENTITY_, _req, CA_PATH)
         _cert_priv = ecqv_cert_reception(
@@ -226,8 +242,8 @@ class TestEcqv(unittest.TestCase):
         self.assertEqual(BASE_MESSAGE, dec)
 
     def test_import_public_key(self):
-        ca_pub = ecqv_pem_pk_extract(ECQV_PATH, CA_PATH)
-        g_pub = ecqv_pem_pk_extract(ECQV_PATH, G_PATH)
+        ca_pub = ecqv_pk_extract(ECQV_PATH, CA_PATH)
+        g_pub = ecqv_pk_extract(ECQV_PATH, G_PATH)
         req = ecqv_cert_request(ECQV_PATH, IDENTITY_, CL_PATH)
         cert, r = ecqv_cert_generate(ECQV_PATH, IDENTITY, req, CA_PATH)
         cert_priv = ecqv_cert_reception(
