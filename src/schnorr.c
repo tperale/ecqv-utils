@@ -9,14 +9,6 @@
 #include <openssl/ec.h>
 #include <openssl/evp.h>
 
-/* #include <openssl/bn.h> */
-/* #include <openssl/bio.h> */
-/* #include <openssl/ecdh.h> */
-/* #include <openssl/objects.h> */
-/* #include <openssl/rand.h> */
-/* #include <openssl/ec.h> */
-/* #include <openssl/pem.h> */
-
 static BIGNUM* schnorr_hash(const EC_GROUP *group, char* msg, EC_POINT* V) {
     EVP_MD_CTX *hash_ctx = EVP_MD_CTX_create();
     unsigned char hash[EVP_MAX_MD_SIZE];
