@@ -1,4 +1,5 @@
 #include "utils.h"
+#include <openssl/ossl_typ.h>
 #include <stdio.h>
 #include <unistd.h>
 #include <string.h>
@@ -65,11 +66,26 @@ const EC_POINT* import_public_key(const EC_GROUP *group, char* ca_pk)
         }
         EC_POINT_copy(pk, EC_KEY_get0_public_key(key));
         EC_KEY_free(key);
-        return pk;
     } else {
         EC_POINT_hex2point(group, ca_pk, pk, NULL);
-        return pk;
     }
+    return pk;
+}
+
+const BIGNUM* import_priv_key(char* priv_str)
+{
+    BIGNUM* priv = BN_new();
+    if (access(priv_str, F_OK) == 0) {
+        EC_KEY *key = ecqv_import_pem(priv_str);
+        if (key == NULL) {
+            exit(EXIT_FAILURE);
+        }
+        BN_copy(priv, EC_KEY_get0_private_key(key));
+        EC_KEY_free(key);
+    } else {
+        BN_hex2bn(&priv, priv_str);
+    }
+    return priv;
 }
 
 /**

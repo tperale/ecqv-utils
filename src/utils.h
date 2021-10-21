@@ -19,6 +19,8 @@ EC_KEY *ecqv_import_pem(char* filename);
 
 const EC_POINT* import_public_key(const EC_GROUP *group, char* ca_pk);
 
+const BIGNUM* import_priv_key(char* priv_str);
+
 /**
  * @desc Import a string in the HEX format representing an EC public key.
  *
