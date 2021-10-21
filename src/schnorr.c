@@ -68,34 +68,24 @@ void schnorr_sign(char* priv_key_hex, char* message) {
 }
 
 void schnorr_verify(char* pub_key, char* v_pub_hex, char* schnorr_sign, char* message) {
+    BN_CTX *ctx = BN_CTX_new();
     const EC_GROUP *group = EC_GROUP_new_by_curve_name(NID_secp256k1);
+    EC_POINT *res = EC_POINT_new(group);
     BIGNUM* order = BN_new();
     EC_GROUP_get_order(group, order, NULL);
-    const EC_POINT* pub = import_public_key(group, pub_key);
-
+    EC_POINT* pub = import_public_key(group, pub_key);
+    BIGNUM* sign = import_priv_key(schnorr_sign);
     EC_POINT *V = ecqv_import_point(group, v_pub_hex);
-    EC_POINT *res = EC_POINT_new(group);
 
     BIGNUM* h = schnorr_hash(group, message, V);
-
-    const BIGNUM* sign = import_priv_key(schnorr_sign);
-
-    BN_CTX *ctx = BN_CTX_new();
     EC_POINT_mul(group, res, sign, pub, h, ctx);
-
-   
-    /* BIGNUM* hds = BN_new(); */
-    /* BN_mul(hds, h, priv, ctx); */
-
-    /* EC_POINT_ */
-
-    /* BN_sub(schnorr_sign, v, hds); */
 
     ecqv_point_print(group, res);
 
-    BN_CTX_free(ctx);
-    /* BN_free(v); */
-    /* BN_free(hds); */
-    /* EC_KEY_free(_keypair); */
+    EC_POINT_free(V);
+    BN_free(sign);
+    EC_POINT_free(pub);
     BN_free(order);
+    EC_POINT_free(res);
+    BN_CTX_free(ctx);
 }
