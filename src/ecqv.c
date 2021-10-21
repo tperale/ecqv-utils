@@ -49,32 +49,12 @@ static BIGNUM* ecqv_hash_implicit_cert(const EC_GROUP* group, EC_POINT* P_u, cha
 
 static void ecqv_export_implicit_cert(const EC_GROUP *group, EC_POINT *P_u)
 {
-    /* size_t Pu_buf_len = EC_POINT_point2oct(group, P_u, POINT_CONVERSION_UNCOMPRESSED, NULL, 0, NULL); */
-    /* unsigned char* Pu_buf = OPENSSL_malloc(Pu_buf_len); */
-    /* EC_POINT_point2oct(group, P_u, POINT_CONVERSION_UNCOMPRESSED, Pu_buf, Pu_buf_len, NULL); */
-
-
-    /* BIO *b64 = BIO_new(BIO_f_base64()); */
-    /* BIO_set_flags(b64, 0); */
-    /* BIO *bio = BIO_new_fp(stdout, BIO_NOCLOSE); */
-    /* bio = BIO_push(b64, bio); */
-    /* BIO_write(bio, Pu_buf, Pu_buf_len); */
-    /* (void)BIO_flush(bio); */
-    /* BIO_free_all(bio); */
-
     char *str = EC_POINT_point2hex(group, P_u, POINT_CONVERSION_UNCOMPRESSED, NULL);
     printf("%s\n", str);
 }
 
 static EC_POINT* ecqv_import_implicit_cert(const EC_GROUP *group, char* cert_str)
 {
-    /* BIO *b64 = BIO_new(BIO_f_base64()); */
-    /* BIO_set_flags(b64, 0); */
-    /* BIO *bio = BIO_new_mem_buf(cert_str, strlen(cert_str)); */
-    /* bio = BIO_push(b64, bio); */
-    /* BIO_(bio, result, length); */
-    /* BIO_free_all(bio); */
-
     EC_POINT *point = EC_POINT_new(group);
     EC_POINT_hex2point(group, cert_str, point, NULL);
 
