@@ -316,13 +316,6 @@ void ecqv_cert_pk_extract(const struct ecqv_opt_t *opt) {
     EC_KEY_free(key);
 }
 
-void ecqv_sign(const struct ecqv_opt_t *opt) {
-    (void) opt;
-    /* EC_KEY *cl_key = ecqv_import_pem(opt->cl_key); */
-    /* ECDSA_SIG sign = ECDSA_do_sign(opt->msg, strlen(opt->msg), cl_key); */
-    /* ECDSA_SIG_get0(sign, NULL, NULL); */
-}
-
 void ecqv_generate_confirmation(char* cert_private_key, char* ca_pk, char* g_path) {
     const EC_GROUP *group = EC_GROUP_new_by_curve_name(NID_secp256k1);
     EC_POINT *Q_ca = import_public_key(group, ca_pk);
