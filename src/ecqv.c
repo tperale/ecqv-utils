@@ -276,7 +276,7 @@ void ecqv_cert_pk_extract(const struct ecqv_opt_t *opt) {
 
 void ecqv_generate_confirmation(char* cert_private_key, char* ca_pk, char* g_path) {
     const EC_GROUP *group = EC_GROUP_new_by_curve_name(NID_secp256k1);
-    EC_POINT *Q_ca = import_public_key(group, ca_pk);
+    const EC_POINT *Q_ca = import_public_key(group, ca_pk);
     ecqv_point_print(group, Q_ca);
     BIGNUM *d_i = BN_new();
     BN_hex2bn(&d_i, cert_private_key);
