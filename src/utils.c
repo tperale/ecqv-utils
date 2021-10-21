@@ -56,7 +56,7 @@ EC_KEY *ecqv_import_pem(char* filename)
 }
 
 
-const EC_POINT* import_public_key(const EC_GROUP *group, char* ca_pk)
+EC_POINT* import_public_key(const EC_GROUP *group, char* ca_pk)
 {
     EC_POINT* pk = EC_POINT_new(group);
     if (access(ca_pk, F_OK) == 0) {
@@ -72,7 +72,7 @@ const EC_POINT* import_public_key(const EC_GROUP *group, char* ca_pk)
     return pk;
 }
 
-const BIGNUM* import_priv_key(char* priv_str)
+BIGNUM* import_priv_key(char* priv_str)
 {
     BIGNUM* priv = BN_new();
     if (access(priv_str, F_OK) == 0) {
