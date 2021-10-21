@@ -1,12 +1,14 @@
 #include "ecqv.h"
 
+#include "schnorr.h"
+#include "crypto.h"
+#include "utils.h"
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
 #include <getopt.h>
-#include "schnorr.h"
-#include "utils.h"
 
 #define ECQV_KG_VERSION "0.1"
 

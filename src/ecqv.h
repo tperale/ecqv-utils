@@ -74,8 +74,4 @@ void ecqv_verify_confirmation(char* ca_path, char* cert_pk, char* g_pk, char* ve
 
 void ecqv_cert_group_generate(char* ca_priv_key, char** ids, char** pubsub_pks, char** g_pks, char** verify_nums, size_t n);
 
-size_t ecqv_encrypt(const char* msg, const char* key, char* ciphertext);
-
-size_t ecqv_decrypt(const char* msg, const char* key, char* plaintext);
-
 #endif
