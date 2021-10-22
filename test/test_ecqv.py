@@ -13,24 +13,24 @@ _G_PATH = TEST_PATH + "_g_key.pem"
 
 
 def ecqv_pk_extract(ecqv_utils_path, priv):
-    s = os.popen("%s pk_extract -k %s" % (ecqv_utils_path, priv))
+    s = os.popen('%s pk_extract -k "%s"' % (ecqv_utils_path, priv))
     return s.read().strip()
 
 
 def ecqv_priv_extract(ecqv_utils_path, priv):
-    s = os.popen("%s priv_extract -k %s" % (ecqv_utils_path, priv))
+    s = os.popen('%s priv_extract -k "%s"' % (ecqv_utils_path, priv))
     return s.read().strip()
 
 
 def ecqv_cert_request(ecqv_utils_path, identity, key_path):
-    s = os.popen("%s cert_request -i %s -k %s" %
+    s = os.popen('%s cert_request -i "%s" -k "%s"' %
                  (ecqv_utils_path, identity, key_path))
     return s.read().strip()
 
 
 def ecqv_cert_generate(ecqv_utils_path, identity, requester_pk, key_path):
     s = os.popen(
-        "%s cert_generate -i %s -r %s -k %s"
+        '%s cert_generate -i "%s" -r "%s" -k "%s"'
         % (ecqv_utils_path, identity, requester_pk, key_path)
     )
     return s.read().strip().split("\n")
@@ -38,7 +38,7 @@ def ecqv_cert_generate(ecqv_utils_path, identity, requester_pk, key_path):
 
 def ecqv_cert_reception(ecqv_utils_path, identity, key_path, ca_pk, cert, r):
     s = os.popen(
-        "%s cert_reception -i %s -k %s -c %s -a %s -r %s"
+        '%s cert_reception -i "%s" -k "%s" -c "%s" -a "%s" -r "%s"'
         % (
             ecqv_utils_path,
             identity,
@@ -53,7 +53,7 @@ def ecqv_cert_reception(ecqv_utils_path, identity, key_path, ca_pk, cert, r):
 
 def ecqv_generate_confirmation(ecqv_utils_path, ca_pk, cert_priv_key, g_path):
     s = os.popen(
-        "%s generate_confirmation -c %s -d %s -g %s"
+        '%s generate_confirmation -c "%s" -d "%s" -g "%s"'
         % (
             ecqv_utils_path,
             ca_pk,
@@ -65,19 +65,8 @@ def ecqv_generate_confirmation(ecqv_utils_path, ca_pk, cert_priv_key, g_path):
 
 
 def ecqv_verify_confirmation(ecqv_utils_path, verify, cert_pk, g_pk, ca_path):
-    print(
-        "%s verify_confirmation -v %s -d %s -g %s -k %s"
-        % (
-            ecqv_utils_path,
-            verify,
-            cert_pk,
-            g_pk,
-            ca_path,
-        )
-    )
-
     s = os.popen(
-        "%s verify_confirmation -v %s -d %s -g %s -k %s"
+        '%s verify_confirmation -v "%s" -d "%s" -g "%s" -k "%s"'
         % (
             ecqv_utils_path,
             verify,
@@ -95,7 +84,7 @@ def ecqv_verify_confirmation(ecqv_utils_path, verify, cert_pk, g_pk, ca_path):
 
 def ecqv_group_generate(ecqv_utils_path, ca_path, ids, g_pks, cert_pks, verify_numbers):
     s = os.popen(
-        "%s group_generate -c %s -i %s -g %s -d %s -v %s"
+        '%s group_generate -c "%s" -i "%s" -g "%s" -d "%s" -v "%s"'
         % (
             ecqv_utils_path,
             ca_path,
@@ -111,7 +100,7 @@ def ecqv_group_generate(ecqv_utils_path, ca_path, ids, g_pks, cert_pks, verify_n
 
 def ecqv_cert_pk_extract(ecqv_utils_path, identity, ca_pk, cert):
     s = os.popen(
-        "%s cert_pk_extract -i %s -c %s -a %s"
+        '%s cert_pk_extract -i "%s" -c "%s" -a "%s"'
         % (
             ecqv_utils_path,
             identity,
@@ -124,7 +113,7 @@ def ecqv_cert_pk_extract(ecqv_utils_path, identity, ca_pk, cert):
 
 def ecqv_encrypt(ecqv_utils_path, key, message):
     s = os.popen(
-        "%s encrypt -k %s -m %s" % (ecqv_utils_path, key, message)
+        '%s encrypt -k "%s" -m "%s"' % (ecqv_utils_path, key, message)
     )
 
     return s.read().strip()
@@ -132,7 +121,7 @@ def ecqv_encrypt(ecqv_utils_path, key, message):
 
 def ecqv_decrypt(ecqv_utils_path, key, cypher):
     s = os.popen(
-        "%s decrypt -k %s -m %s" % (ecqv_utils_path, key, cypher)
+        '%s decrypt -k "%s" -m "%s"' % (ecqv_utils_path, key, cypher)
     )
 
     return s.read().strip()
@@ -143,11 +132,6 @@ IDENTITY_ = "11111"
 
 
 class TestEcqv(unittest.TestCase):
-    def test_public_key(self):
-        PK = "043E15031CAD572A280EFBE3E6B43F3D0D4859D32754C7AE8CBF86433802AA05BBA1FDFD401C95B7B6E30AEC55FBD4A9D601F8EE324BE916ECAC6F334565F28D36"
-        pk = ecqv_pk_extract(ECQV_PATH, CA_PATH)
-        self.assertEqual(PK, pk)
-
     def test_priv_key(self):
         pk = ecqv_pk_extract(ECQV_PATH, CA_PATH)
         priv = ecqv_priv_extract(ECQV_PATH, CA_PATH)
@@ -173,7 +157,6 @@ class TestEcqv(unittest.TestCase):
         cert_pub = ecqv_pk_extract(ECQV_PATH, cert_priv)
         self.assertEqual(cert_pub, ecqv_pk_extract(ECQV_PATH, cert_priv))
         conf = ecqv_generate_confirmation(ECQV_PATH, ca_pub, cert_priv, G_PATH)
-        print("heeeeeeeeeeeeeeeeeere ", conf)
         decrypted_conf = ecqv_verify_confirmation(
             ECQV_PATH, conf, cert_pub, g_pub, CA_PATH)
         self.assertIsNotNone(decrypted_conf)
@@ -197,7 +180,7 @@ class TestEcqv(unittest.TestCase):
         priv, pub = ecqv_group_generate(ECQV_PATH, CA_PATH, [IDENTITY], [
                                         g_pub], [cert_pub], [decrypted_conf])
 
-        self.assertEqual(priv, ecqv_pk_extract(ECQV_PATH, pub))
+        self.assertEqual(pub, ecqv_pk_extract(ECQV_PATH, priv))
 
     def test_group_generation_second(self):
         ca_pub = ecqv_pk_extract(ECQV_PATH, CA_PATH)
@@ -232,7 +215,7 @@ class TestEcqv(unittest.TestCase):
         priv, pub = ecqv_group_generate(ECQV_PATH, CA_PATH, [IDENTITY, IDENTITY_], [
                                         g_pub, _g_pub], [cert_pub, _cert_pub], [decrypted_conf, _decrypted_conf])
 
-        self.assertEqual(priv, ecqv_pk_extract(ECQV_PATH, pub))
+        self.assertEqual(pub, ecqv_pk_extract(ECQV_PATH, priv))
 
     def test_encrypt(self):
         KEY = "04B868B4B5491E2A1E9530248EFF926C800609A1F541C14DBB566368CC2989E4D0BAE4F55D3E07BF63692132992CFE4381FC535AC717EA6BA232CD24F2DFA27DF8"

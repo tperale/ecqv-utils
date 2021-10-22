@@ -3,24 +3,6 @@
 
 #include <stddef.h>
 
-struct ecqv_opt_t {
-    char *ca_key; /* Path to .pem file of CA authority priv key (-k) */
-    char *ca_pk; /* HEX formatted plain text PK of CA authority */
-    char *requester_pk;
-    char *requester_key; /* Path to .pem file of the cert requester */
-    char *identity;
-    char *r;
-    char *cl_key;
-    char *msg;
-    char *g_path;
-    char *g_pk;
-    char *cert;
-    char *cert_priv;
-    char *cert_pk;
-};
-
-void ecqv_export_ca_generator(const struct ecqv_opt_t *opt);
-
 /**
  * @desc First step of the Elliptic Curve Qu-Vanstone Implicit 
  *   Certificate Scheme executed by the requester. In this
@@ -52,7 +34,7 @@ void ecqv_cert_reception(char* requester_key_path, char* ca_pk, char* cert, char
  * 
  * @arg{opt} A struct containing the command line arguments.
  */
-void ecqv_cert_pk_extract(const struct ecqv_opt_t *opt);
+void ecqv_cert_pk_extract(char* ca_pk, char* cert, char* identity);
 
 /**
  * @desc Generate a confirmation EC point from the certificate

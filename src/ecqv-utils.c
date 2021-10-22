@@ -24,7 +24,6 @@
     "  -m <arg>\n" \
     "  -k <arg>\n"
  
-static struct ecqv_opt_t ecqv_opt;
 static void print_usage_and_exit(void);
 
 static size_t parse_cmd_list(char* input, char*** output)
@@ -60,11 +59,7 @@ static void parse_cmd_options_pk_extract(int argc, char **argv, char** key)
 {
     int opt;
 
-    memset(&ecqv_opt, 0, sizeof(ecqv_opt));
     opterr = 0; /* To inhibit error messages */
-
-    ecqv_opt.ca_pk = NULL;
-    ecqv_opt.ca_key = NULL;
 
     while ((opt = getopt(argc, argv, "k:c:")) != -1) {
         switch (opt) {
@@ -94,20 +89,18 @@ static void parse_cmd_options_pk_extract(int argc, char **argv, char** key)
     "  -i <arg>     Identity of the requester\n" \
     "  -k <arg>     The PEM file containing the EC private key of the requester\n" \
     "\n" 
-static void parse_cmd_options_cert_request(int argc, char **argv)
+static void parse_cmd_options_cert_request(int argc, char **argv, char** requester_key)
 {
     int opt;
 
-    memset(&ecqv_opt, 0, sizeof(ecqv_opt));
     opterr = 0; /* To inhibit error messages */
 
     while ((opt = getopt(argc, argv, "i:k:")) != -1) {
         switch (opt) {
             case 'i':
-                ecqv_opt.identity = optarg;
                 break;
             case 'k':
-                ecqv_opt.requester_key = optarg;
+                *requester_key = optarg;
                 break;
             default:
                 /* If unknown option print info */
@@ -116,7 +109,7 @@ static void parse_cmd_options_cert_request(int argc, char **argv)
         }
     }
 
-    if (!ecqv_opt.identity || !ecqv_opt.requester_key) {
+    if (!*requester_key) {
         fprintf(stderr, ECQV_INFO ECQV_CERT_REQUEST_CMD_INFO);
         exit(EXIT_FAILURE);
     }
@@ -129,23 +122,22 @@ static void parse_cmd_options_cert_request(int argc, char **argv)
     "  -r <arg>     The HEX representation EC public key of the requester\n" \
     "  -k <arg>     The PEM file containing the EC private key of the CA\n" \
     "\n"
-static void parse_cmd_options_cert_generate(int argc, char **argv)
+static void parse_cmd_options_cert_generate(int argc, char **argv, char** identity, char** requester_pk, char** ca_key)
 {
     int opt;
 
-    memset(&ecqv_opt, 0, sizeof(ecqv_opt));
     opterr = 0; /* To inhibit error messages */
 
     while ((opt = getopt(argc, argv, "i:r:k:")) != -1) {
         switch (opt) {
             case 'i':
-                ecqv_opt.identity = optarg;
+                *identity = optarg;
                 break;
             case 'r':
-                ecqv_opt.requester_pk = optarg;
+                *requester_pk = optarg;
                 break;
             case 'k':
-                ecqv_opt.ca_key = optarg;
+                *ca_key = optarg;
                 break;
             default:
                 print_usage_and_exit();
@@ -153,7 +145,7 @@ static void parse_cmd_options_cert_generate(int argc, char **argv)
         }
     }
 
-    if (!ecqv_opt.identity || !ecqv_opt.requester_pk || !ecqv_opt.ca_key) {
+    if (!*identity || !*requester_pk || !*ca_key) {
         fprintf(stderr, ECQV_INFO ECQV_CERT_GENERATE_CMD_INFO);
         exit(EXIT_FAILURE);
     }
@@ -166,23 +158,22 @@ static void parse_cmd_options_cert_generate(int argc, char **argv)
     "  -d <arg>     Ceritificate private key\n" \
     "  -g <arg>     Random big number generated\n" \
     "\n"
-static void parse_cmd_options_generate_confirmation(int argc, char **argv)
+static void parse_cmd_options_generate_confirmation(int argc, char **argv, char** cert_priv, char** ca_pk, char** g_path)
 {
     int opt;
 
-    memset(&ecqv_opt, 0, sizeof(ecqv_opt));
     opterr = 0; /* To inhibit error messages */
 
     while ((opt = getopt(argc, argv, "c:d:g:")) != -1) {
         switch (opt) {
             case 'c':
-                ecqv_opt.ca_pk = optarg;
+                *ca_pk = optarg;
                 break;
             case 'd':
-                ecqv_opt.cert_priv = optarg;
+                *cert_priv = optarg;
                 break;
             case 'g':
-                ecqv_opt.g_path = optarg;
+                *g_path = optarg;
                 break;
             default:
                 print_usage_and_exit();
@@ -190,7 +181,7 @@ static void parse_cmd_options_generate_confirmation(int argc, char **argv)
         }
     }
 
-    if (!ecqv_opt.ca_pk || !ecqv_opt.cert_priv || !ecqv_opt.g_path) {
+    if (!*ca_pk || !*cert_priv || !*g_path) {
         fprintf(stderr, ECQV_INFO ECQV_CERT_GENERATE_CONFIRMATION);
         exit(EXIT_FAILURE);
     }
@@ -204,26 +195,25 @@ static void parse_cmd_options_generate_confirmation(int argc, char **argv)
     "  -c <arg>     Certificate public key.\n" \
     "  -g <arg>     Random big number generated public key.\n" \
     "\n"
-static void parse_cmd_options_verify_confirmation(int argc, char **argv)
+static void parse_cmd_options_verify_confirmation(int argc, char **argv, char** ca_key, char** cert_pk, char** g_pk, char** msg)
 {
     int opt;
 
-    memset(&ecqv_opt, 0, sizeof(ecqv_opt));
     opterr = 0; /* To inhibit error messages */
 
     while ((opt = getopt(argc, argv, "k:d:v:g:")) != -1) {
         switch (opt) {
             case 'k':
-                ecqv_opt.ca_key = optarg;
+                *ca_key = optarg;
                 break;
             case 'd':
-                ecqv_opt.cert_pk = optarg;
+                *cert_pk = optarg;
                 break;
             case 'v':
-                ecqv_opt.msg = optarg;
+                *msg = optarg;
                 break;
             case 'g':
-                ecqv_opt.g_pk = optarg;
+                *g_pk = optarg;
                 break;
             default:
                 print_usage_and_exit();
@@ -231,7 +221,7 @@ static void parse_cmd_options_verify_confirmation(int argc, char **argv)
         }
     }
 
-    if (!ecqv_opt.cert_pk || !ecqv_opt.g_pk || !ecqv_opt.msg) {
+    if (!*cert_pk || !*g_pk || !*msg || !*ca_key) {
         fprintf(stderr, ECQV_INFO ECQV_CERT_VERIFY_CONFIRMATION);
         exit(EXIT_FAILURE);
     }
@@ -288,23 +278,22 @@ static void parse_cmd_options_cert_group_generate(int argc, char **argv, char** 
     "  -c <arg>     The CA public key in hex format\n" \
     "  -a <arg>     The implicit certificate in hex format\n" \
     "\n"
-static void parse_cmd_options_cert_pk_extract(int argc, char **argv)
+static void parse_cmd_options_cert_pk_extract(int argc, char **argv, char** identity, char** ca_pk, char** cert)
 {
     int opt;
 
-    memset(&ecqv_opt, 0, sizeof(ecqv_opt));
     opterr = 0; /* To inhibit error messages */
 
     while ((opt = getopt(argc, argv, "i:c:a:")) != -1) {
         switch (opt) {
             case 'i':
-                ecqv_opt.identity = optarg;
+                *identity = optarg;
                 break;
             case 'c':
-                ecqv_opt.ca_pk = optarg;
+                *ca_pk = optarg;
                 break;
             case 'a':
-                ecqv_opt.cert = optarg;
+                *cert = optarg;
                 break;
             default:
                 print_usage_and_exit();
@@ -312,7 +301,7 @@ static void parse_cmd_options_cert_pk_extract(int argc, char **argv)
         }
     }
 
-    if (!ecqv_opt.identity || !ecqv_opt.cert || !ecqv_opt.ca_pk) {
+    if (!*identity || !*cert || !*ca_pk) {
         fprintf(stderr, ECQV_INFO ECQV_CERT_PK_EXTRACT_CMD_INFO);
         exit(EXIT_FAILURE);
     }
@@ -327,29 +316,28 @@ static void parse_cmd_options_cert_pk_extract(int argc, char **argv)
     "  -a <arg>     The implicit certificate in hex format\n" \
     "  -r <arg>     The number 'r' calculated by the CA\n" \
     "\n"
-static void parse_cmd_options_cert_reception(int argc, char **argv)
+static void parse_cmd_options_cert_reception(int argc, char **argv, char** requester_key, char** ca_pk, char** cert, char** identity, char** r)
 {
     int opt;
 
-    memset(&ecqv_opt, 0, sizeof(ecqv_opt));
     opterr = 0; /* To inhibit error messages */
 
     while ((opt = getopt(argc, argv, "i:r:c:k:a:")) != -1) {
         switch (opt) {
             case 'i':
-                ecqv_opt.identity = optarg;
+                *identity = optarg;
                 break;
             case 'k':
-                ecqv_opt.requester_key = optarg;
+                *requester_key = optarg;
                 break;
             case 'c':
-                ecqv_opt.ca_pk = optarg;
+                *ca_pk = optarg;
                 break;
             case 'a':
-                ecqv_opt.cert = optarg;
+                *cert = optarg;
                 break;
             case 'r':
-                ecqv_opt.r = optarg;
+                *r = optarg;
                 break;
             default:
                 print_usage_and_exit();
@@ -357,7 +345,7 @@ static void parse_cmd_options_cert_reception(int argc, char **argv)
         }
     }
 
-    if (!ecqv_opt.identity || !ecqv_opt.requester_key || !ecqv_opt.cert || !ecqv_opt.ca_pk || !ecqv_opt.r) {
+    if (!*identity || !*requester_key || !*cert || !*ca_pk || !*r) {
         fprintf(stderr, ECQV_INFO ECQV_CERT_RECEPTION_CMD_INFO);
         exit(EXIT_FAILURE);
     }
@@ -373,7 +361,6 @@ static void parse_cmd_options_encrypt(int argc, char** argv, char** msg, char** 
 {
     int opt;
 
-    memset(&ecqv_opt, 0, sizeof(ecqv_opt));
     opterr = 0; /* To inhibit error messages */
 
     while ((opt = getopt(argc, argv, "m:k:")) != -1) {
@@ -406,7 +393,6 @@ static void parse_cmd_schnorr_sign(int argc, char **argv, char** priv_hex, char*
 {
     int opt;
 
-    memset(&ecqv_opt, 0, sizeof(ecqv_opt));
     opterr = 0; /* To inhibit error messages */
 
     while ((opt = getopt(argc, argv, "k:m:")) != -1) {
@@ -441,7 +427,6 @@ static void parse_cmd_schnorr_verify(int argc, char **argv, char** pub_key, char
 {
     int opt;
 
-    memset(&ecqv_opt, 0, sizeof(ecqv_opt));
     opterr = 0; /* To inhibit error messages */
 
     while ((opt = getopt(argc, argv, "k:m:s:v:")) != -1) {
@@ -497,23 +482,42 @@ int main(int argc, char **argv)
         parse_cmd_options_pk_extract(argc, argv, &key);
         ecqv_priv_extract(key);
     } else if (strcmp(cmd, "cert_request") == 0) {
-        parse_cmd_options_cert_request(argc, argv);
-        ecqv_cert_request(ecqv_opt.requester_key);
+        char* requester_key = NULL;
+        parse_cmd_options_cert_request(argc, argv, &requester_key);
+        ecqv_cert_request(requester_key);
     } else if (strcmp(cmd, "cert_generate") == 0) {
-        parse_cmd_options_cert_generate(argc, argv);
-        ecqv_cert_generate(ecqv_opt.ca_key, ecqv_opt.requester_pk, ecqv_opt.identity);
+        char* identity = NULL;
+        char* requester_pk = NULL;
+        char* ca_key = NULL;
+        parse_cmd_options_cert_generate(argc, argv, &identity, &requester_pk, &ca_key);
+        ecqv_cert_generate(ca_key, requester_pk, identity);
     } else if (strcmp(cmd, "cert_reception") == 0) {
-        parse_cmd_options_cert_reception(argc, argv);
-        ecqv_cert_reception(ecqv_opt.requester_key, ecqv_opt.ca_pk, ecqv_opt.cert, ecqv_opt.identity, ecqv_opt.r);
+        char* requester_key = NULL;
+        char* ca_pk = NULL; 
+        char* cert = NULL; 
+        char* identity = NULL; 
+        char* r = NULL;
+        parse_cmd_options_cert_reception(argc, argv, &requester_key, &ca_pk, &cert, &identity, &r);
+        ecqv_cert_reception(requester_key, ca_pk, cert, identity, r);
     } else if (strcmp(cmd, "cert_pk_extract") == 0) {
-        parse_cmd_options_cert_pk_extract(argc, argv);
-        ecqv_cert_pk_extract(&ecqv_opt);
+        char* identity = NULL;
+        char* ca_pk = NULL;
+        char* cert = NULL;
+        parse_cmd_options_cert_pk_extract(argc, argv, &identity, &ca_pk, &cert);
+        ecqv_cert_pk_extract(ca_pk, cert, identity);
     } else if (strcmp(cmd, "generate_confirmation") == 0) {
-        parse_cmd_options_generate_confirmation(argc, argv);
-        ecqv_generate_confirmation(ecqv_opt.cert_priv, ecqv_opt.ca_pk, ecqv_opt.g_path);
+        char* cert_priv = NULL;
+        char* ca_pk = NULL;
+        char* g_path = NULL;
+        parse_cmd_options_generate_confirmation(argc, argv, &cert_priv, &ca_pk, &g_path);
+        ecqv_generate_confirmation(cert_priv, ca_pk, g_path);
     } else if (strcmp(cmd, "verify_confirmation") == 0) {
-        parse_cmd_options_verify_confirmation(argc, argv);
-        ecqv_verify_confirmation(ecqv_opt.ca_key, ecqv_opt.cert_pk, ecqv_opt.g_pk, ecqv_opt.msg);
+        char* ca_key = NULL;
+        char* cert_pk = NULL;
+        char* g_pk = NULL;
+        char* msg = NULL;
+        parse_cmd_options_verify_confirmation(argc, argv, &ca_key, &cert_pk, &g_pk, &msg);
+        ecqv_verify_confirmation(ca_key, cert_pk, g_pk, msg);
     } else if (strcmp(cmd, "group_generate") == 0) {
         char* ca_path = NULL;
         char** ids = NULL;

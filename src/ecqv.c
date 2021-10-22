@@ -196,12 +196,12 @@ void ecqv_cert_reception(char* requester_key_path, char* ca_pk, char* cert, char
     EC_KEY_free(req_key);
 }
 
-void ecqv_cert_pk_extract(const struct ecqv_opt_t *opt) {
+void ecqv_cert_pk_extract(char* ca_pk, char* cert, char* identity) {
     const EC_GROUP *group = EC_GROUP_new_by_curve_name(NID_secp256k1);
-    EC_POINT *Q_ca = ecqv_import_point(group, opt->ca_pk);
+    EC_POINT *Q_ca = ecqv_import_point(group, ca_pk);
     EC_KEY *key = EC_KEY_new();
-    EC_POINT *P_u = ecqv_import_implicit_cert(group, opt->cert);
-    char* U = opt->identity;
+    EC_POINT *P_u = ecqv_import_implicit_cert(group, cert);
+    char* U = identity;
     BIGNUM *e = BN_new();
     EC_POINT *ePu = EC_POINT_new(group);
     EC_POINT *Q_u = EC_POINT_new(group);
