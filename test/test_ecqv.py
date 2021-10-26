@@ -83,6 +83,18 @@ def ecqv_verify_confirmation(ecqv_utils_path, verify, cert_pk, g_pk, ca_path):
 
 
 def ecqv_group_generate(ecqv_utils_path, ca_path, ids, g_pks, cert_pks, verify_numbers):
+    print(
+        '%s group_generate -c "%s" -i "%s" -g "%s" -d "%s" -v "%s"'
+        % (
+            ecqv_utils_path,
+            ca_path,
+            ",".join(ids),
+            ",".join(g_pks),
+            ",".join(cert_pks),
+            ",".join(verify_numbers),
+        )
+    )
+
     s = os.popen(
         '%s group_generate -c "%s" -i "%s" -g "%s" -d "%s" -v "%s"'
         % (
@@ -124,6 +136,13 @@ def ecqv_decrypt(ecqv_utils_path, key, cypher):
         '%s decrypt -k "%s" -m "%s"' % (ecqv_utils_path, key, cypher)
     )
 
+    return s.read().strip()
+
+
+def ecqv_mul(ecqv_utils_path, priv, pub):
+    s = os.popen(
+        '%s mul -k "%s" -p "%s"' % (ecqv_utils_path, priv, pub)
+    )
     return s.read().strip()
 
 
@@ -236,6 +255,16 @@ class TestEcqv(unittest.TestCase):
         OUT2 = ecqv_generate_confirmation(
             ECQV_PATH, CA_PATH, cert_priv, G_PATH)
         self.assertEqual(OUT1, OUT2)
+
+    def test_ec_mul(self):
+        ca_pub = ecqv_pk_extract(ECQV_PATH, CA_PATH)
+        ca_priv = ecqv_priv_extract(ECQV_PATH, CA_PATH)
+        g_pub = ecqv_pk_extract(ECQV_PATH, G_PATH)
+        g_priv = ecqv_priv_extract(ECQV_PATH, G_PATH)
+
+        x = ecqv_mul(ECQV_PATH, ca_priv, g_pub)
+        y = ecqv_mul(ECQV_PATH, g_priv, ca_pub)
+        self.assertEqual(x, y)
 
 
 if __name__ == "__main__":

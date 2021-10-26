@@ -456,6 +456,38 @@ static void parse_cmd_schnorr_verify(int argc, char **argv, char** pub_key, char
 
 }
 
+#define ECQV_INFO_CMD_MUL \
+    "<CMD>: mul\n" \
+    "<Options>\n" \
+    "  -k <arg>     Private key in hex format.\n"  \
+    "  -p <arg>     Public key in hex format.\n"  \
+    "\n"
+static void parse_cmd_mul(int argc, char **argv, char** pub_key, char** priv_key)
+{
+    int opt;
+
+    opterr = 0; /* To inhibit error messages */
+
+    while ((opt = getopt(argc, argv, "k:p:")) != -1) {
+        switch (opt) {
+            case 'k':
+                *priv_key = optarg;
+                break;
+            case 'p':
+                *pub_key = optarg;
+                break;
+            default:
+                print_usage_and_exit();
+                break;
+        }
+    }
+
+    if (!*pub_key || !*priv_key) {
+        fprintf(stderr, ECQV_INFO_CMD_MUL);
+        exit(EXIT_FAILURE);
+    }
+}
+
 static void print_usage_and_exit(void)
 {
     fprintf(stderr, ECQV_INFO ECQV_PK_EXTRACT_CMD_INFO ECQV_CERT_REQUEST_CMD_INFO ECQV_CERT_GENERATE_CMD_INFO ECQV_CERT_RECEPTION_CMD_INFO ECQV_CERT_PK_EXTRACT_CMD_INFO ECQV_CERT_GENERATE_CONFIRMATION ECQV_CERT_VERIFY_CONFIRMATION ECQV_INFO_ECQV_GROUP_GENERATE_CMD_INFO ECQV_INFO_ENCRYPT ECQV_INFO_SIGN ECQV_INFO_VERIFY);
@@ -553,6 +585,11 @@ int main(int argc, char **argv)
         char* v = NULL;
         parse_cmd_schnorr_verify(argc, argv, &pub_key, &sign, &v, &msg);
         schnorr_verify(pub_key, v, sign, msg);
+    } else if (strcmp(cmd, "mul") == 0) {
+        char* pub_key = NULL;
+        char* priv_key = NULL;
+        parse_cmd_mul(argc, argv, &pub_key, &priv_key);
+        ecqv_ecdh(pub_key, priv_key);
     } else {
         print_usage_and_exit();
     }

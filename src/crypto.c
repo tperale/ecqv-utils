@@ -82,4 +82,24 @@ size_t ecqv_decrypt(const char* msg, const char* key, char* plaintext) {
     return (size_t) plaintext_len;
 }
 
+EC_POINT* ecqv_mul(BIGNUM* priv, EC_POINT* pub) {
+    /* EC_POINT_mul(const EC_GROUP *group, EC_POINT *r, const BIGNUM *n, const EC_POINT *q, const BIGNUM *m, BN_CTX *ctx); */    
+    const EC_GROUP *group = EC_GROUP_new_by_curve_name(NID_secp256k1);
+    EC_POINT* res = EC_POINT_new(group);
+    EC_POINT_mul(group, res, NULL, pub, priv, NULL);
 
+    return res;
+}
+
+void ecqv_ecdh(char* pub_hex, char* priv_hex) {
+    const EC_GROUP *group = EC_GROUP_new_by_curve_name(NID_secp256k1);
+    EC_POINT* pub = import_public_key(group, pub_hex);
+    BIGNUM* priv = import_priv_key(priv_hex);
+
+    EC_POINT* mul = ecqv_mul(priv, pub);
+    ecqv_point_print(group, mul);
+
+    EC_POINT_free(mul);
+    BN_free(priv);
+    EC_POINT_free(pub);
+}
