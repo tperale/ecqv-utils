@@ -590,6 +590,8 @@ int main(int argc, char **argv)
         char* priv_key = NULL;
         parse_cmd_mul(argc, argv, &pub_key, &priv_key);
         ecqv_ecdh(pub_key, priv_key);
+    } else if (strcmp(cmd, "random") == 0) {
+        ecqv_gen_key();
     } else {
         print_usage_and_exit();
     }

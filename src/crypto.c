@@ -103,3 +103,23 @@ void ecqv_ecdh(char* pub_hex, char* priv_hex) {
     BN_free(priv);
     EC_POINT_free(pub);
 }
+
+
+BIGNUM* _ecqv_gen_key() {
+    const EC_GROUP *group = EC_GROUP_new_by_curve_name(NID_secp256k1);
+    BIGNUM* order = BN_new();
+    EC_GROUP_get_order(group, order, NULL);
+
+    BIGNUM* rand = BN_new();
+    BN_rand_range(rand, order);
+
+    BN_free(order);
+
+    return rand;
+}
+
+void ecqv_gen_key() {
+    BIGNUM* rand = _ecqv_gen_key();
+    ecqv_bn_print(rand);
+    BN_free(rand);
+}

@@ -8,5 +8,6 @@ void ecqv_priv_extract(char* key_str);
 size_t ecqv_encrypt(const char* msg, const char* key, char* ciphertext);
 size_t ecqv_decrypt(const char* msg, const char* key, char* plaintext);
 void ecqv_ecdh(char* pub_hex, char* priv_hex);
+void ecqv_gen_key();
 
 #endif
