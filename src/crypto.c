@@ -1,4 +1,5 @@
 #include "crypto.h"
+#include "opt.h"
 #include "utils.h"
 
 #include <openssl/ossl_typ.h>
@@ -8,7 +9,7 @@
 #include <openssl/evp.h>
 
 void ecqv_pk_extract(char* key_str) {
-    const EC_GROUP *group = EC_GROUP_new_by_curve_name(NID_secp256k1);
+    const EC_GROUP *group = EC_GROUP_new_by_curve_name(ECQV_EC_CURVE);
 
     EC_POINT* pk = EC_POINT_new(group);
     if (access(key_str, F_OK) == 0) {
@@ -84,7 +85,7 @@ size_t ecqv_decrypt(const char* msg, const char* key, char* plaintext) {
 
 EC_POINT* ecqv_mul(BIGNUM* priv, EC_POINT* pub) {
     /* EC_POINT_mul(const EC_GROUP *group, EC_POINT *r, const BIGNUM *n, const EC_POINT *q, const BIGNUM *m, BN_CTX *ctx); */    
-    const EC_GROUP *group = EC_GROUP_new_by_curve_name(NID_secp256k1);
+    const EC_GROUP *group = EC_GROUP_new_by_curve_name(ECQV_EC_CURVE);
     EC_POINT* res = EC_POINT_new(group);
     EC_POINT_mul(group, res, NULL, pub, priv, NULL);
 
@@ -92,7 +93,7 @@ EC_POINT* ecqv_mul(BIGNUM* priv, EC_POINT* pub) {
 }
 
 void ecqv_ecdh(char* pub_hex, char* priv_hex) {
-    const EC_GROUP *group = EC_GROUP_new_by_curve_name(NID_secp256k1);
+    const EC_GROUP *group = EC_GROUP_new_by_curve_name(ECQV_EC_CURVE);
     EC_POINT* pub = import_public_key(group, pub_hex);
     BIGNUM* priv = import_priv_key(priv_hex);
 
@@ -106,7 +107,7 @@ void ecqv_ecdh(char* pub_hex, char* priv_hex) {
 
 
 BIGNUM* _ecqv_gen_key() {
-    const EC_GROUP *group = EC_GROUP_new_by_curve_name(NID_secp256k1);
+    const EC_GROUP *group = EC_GROUP_new_by_curve_name(ECQV_EC_CURVE);
     BIGNUM* order = BN_new();
     EC_GROUP_get_order(group, order, NULL);
 

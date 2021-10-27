@@ -1,4 +1,5 @@
 #include "schnorr.h"
+#include "opt.h"
 #include "utils.h"
 
 #include <openssl/bn.h>
@@ -56,7 +57,7 @@ static BIGNUM* _schnorr_sign(const EC_GROUP *group, BIGNUM* priv, BIGNUM* rand, 
 }
 
 void schnorr_sign(char* priv_key, char* message) {
-    const EC_GROUP *group = EC_GROUP_new_by_curve_name(NID_secp256k1);
+    const EC_GROUP *group = EC_GROUP_new_by_curve_name(ECQV_EC_CURVE);
     BIGNUM* order = BN_new();
     EC_GROUP_get_order(group, order, NULL);
     BIGNUM* priv = import_priv_key(priv_key);
@@ -89,7 +90,7 @@ static EC_POINT* _schnorr_verify(const EC_GROUP* group, EC_POINT* pub, EC_POINT*
 }
 
 void schnorr_verify(char* pub_key, char* v_pub_hex, char* schnorr_sign, char* message) {
-    const EC_GROUP *group = EC_GROUP_new_by_curve_name(NID_secp256k1);
+    const EC_GROUP *group = EC_GROUP_new_by_curve_name(ECQV_EC_CURVE);
     BIGNUM* order = BN_new();
     EC_GROUP_get_order(group, order, NULL);
     EC_POINT* pub = import_public_key(group, pub_key);

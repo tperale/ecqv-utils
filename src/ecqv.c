@@ -1,4 +1,5 @@
 #include "ecqv.h"
+#include "opt.h"
 #include "crypto.h"
 #include "utils.h"
 
@@ -197,7 +198,7 @@ void ecqv_cert_reception(char* requester_key_path, char* ca_pk, char* cert, char
 }
 
 void ecqv_cert_pk_extract(char* ca_pk, char* cert, char* identity) {
-    const EC_GROUP *group = EC_GROUP_new_by_curve_name(NID_secp256k1);
+    const EC_GROUP *group = EC_GROUP_new_by_curve_name(ECQV_EC_CURVE);
     EC_POINT *Q_ca = ecqv_import_point(group, ca_pk);
     EC_KEY *key = EC_KEY_new();
     EC_POINT *P_u = ecqv_import_implicit_cert(group, cert);
@@ -231,7 +232,7 @@ void ecqv_cert_pk_extract(char* ca_pk, char* cert, char* identity) {
 }
 
 void ecqv_generate_confirmation(char* cert_private_key, char* ca_pk, char* g_path) {
-    const EC_GROUP *group = EC_GROUP_new_by_curve_name(NID_secp256k1);
+    const EC_GROUP *group = EC_GROUP_new_by_curve_name(ECQV_EC_CURVE);
     EC_POINT *Q_ca = import_public_key(group, ca_pk);
     BIGNUM *d_i = BN_new();
     BN_hex2bn(&d_i, cert_private_key);
@@ -274,7 +275,7 @@ void ecqv_generate_confirmation(char* cert_private_key, char* ca_pk, char* g_pat
 
 void ecqv_verify_confirmation(char* ca_path, char* cert_pk, char* g_pk, char* verification_number)
 {
-    const EC_GROUP *group = EC_GROUP_new_by_curve_name(NID_secp256k1);
+    const EC_GROUP *group = EC_GROUP_new_by_curve_name(ECQV_EC_CURVE);
 
     EC_KEY *key = ecqv_import_pem(ca_path);
     const BIGNUM *d_ca = EC_KEY_get0_private_key(key);
@@ -397,7 +398,7 @@ static BIGNUM* ecqv_build_pubsub_private_key(char** verify_nums, size_t n, BIGNU
 
 void ecqv_cert_group_generate(char* ca_path, char** ids, char** cert_pks, char** g_pks, char** verify_nums, size_t n)
 {
-    const EC_GROUP *group = EC_GROUP_new_by_curve_name(NID_secp256k1);
+    const EC_GROUP *group = EC_GROUP_new_by_curve_name(ECQV_EC_CURVE);
 
     EC_KEY* ca_key = ecqv_import_pem(ca_path);
     BIGNUM *d_CAg = ecqv_build_group_private_key(ca_key, ids, n);
