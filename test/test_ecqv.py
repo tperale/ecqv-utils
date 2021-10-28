@@ -75,11 +75,10 @@ def ecqv_verify_confirmation(ecqv_utils_path, verify, cert_pk, g_pk, ca_path):
             ca_path,
         )
     )
-    response = s.read().strip().split()
-    if len(response) and (response[0] == response[1]):
-        return response[0]
-    else:
-        return None
+    response = s.read().strip()
+    if len(response):
+        return response
+    return None
 
 
 def ecqv_group_generate(ecqv_utils_path, ca_path, ids, g_pks, cert_pks, verify_numbers):
@@ -196,7 +195,7 @@ class TestEcqv(unittest.TestCase):
 
         self.assertIsNotNone(decrypted_conf)
 
-        priv, pub = ecqv_group_generate(ECQV_PATH, CA_PATH, [IDENTITY], [
+        pub, priv = ecqv_group_generate(ECQV_PATH, CA_PATH, [IDENTITY], [
                                         g_pub], [cert_pub], [decrypted_conf])
 
         self.assertEqual(pub, ecqv_pk_extract(ECQV_PATH, priv))
@@ -231,7 +230,7 @@ class TestEcqv(unittest.TestCase):
 
         self.assertIsNotNone(_decrypted_conf)
 
-        priv, pub = ecqv_group_generate(ECQV_PATH, CA_PATH, [IDENTITY, IDENTITY_], [
+        pub, priv = ecqv_group_generate(ECQV_PATH, CA_PATH, [IDENTITY, IDENTITY_], [
                                         g_pub, _g_pub], [cert_pub, _cert_pub], [decrypted_conf, _decrypted_conf])
 
         self.assertEqual(pub, ecqv_pk_extract(ECQV_PATH, priv))
