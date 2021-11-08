@@ -48,12 +48,6 @@ static BIGNUM* ecqv_hash_implicit_cert(const EC_GROUP* group, EC_POINT* P_u, cha
     return result;
 }
 
-static void ecqv_export_implicit_cert(const EC_GROUP *group, EC_POINT *P_u)
-{
-    char *str = EC_POINT_point2hex(group, P_u, POINT_CONVERSION_UNCOMPRESSED, NULL);
-    printf("%s\n", str);
-}
-
 static EC_POINT* ecqv_import_implicit_cert(const EC_GROUP *group, char* cert_str)
 {
     EC_POINT *point = EC_POINT_new(group);
@@ -63,31 +57,17 @@ static EC_POINT* ecqv_import_implicit_cert(const EC_GROUP *group, char* cert_str
 }
 
 void ecqv_cert_request(char* requester_key_path) {
-    EC_KEY *key;
-    
-    if (NULL == (key = ecqv_import_pem(requester_key_path))) {
-        return;
-    }
+    const EC_GROUP *group = EC_GROUP_new_by_curve_name(ECQV_EC_CURVE);
+    EC_POINT* pk = import_public_key(group, requester_key_path);
 
-    const EC_GROUP *group = EC_KEY_get0_group(key);
+    ecqv_point_print(group, pk);
 
-    char *str = EC_POINT_point2hex(group, EC_KEY_get0_public_key(key), POINT_CONVERSION_UNCOMPRESSED, NULL);
-
-    if (!str) {
-        fprintf(stderr, "Log: error converting point to hex.\n");
-        return;
-    }
-
-    printf("%s\n", str);
-
-    OPENSSL_free(str);
-    EC_KEY_free(key);
-
+    EC_POINT_free(pk);
 }
 
 void ecqv_cert_generate(char* ca_key_path, char* requester_pk, char* identity) {
-    EC_KEY *ca_key = ecqv_import_pem(ca_key_path);
-    const EC_GROUP *group = EC_KEY_get0_group(ca_key);
+    const EC_GROUP *group = EC_GROUP_new_by_curve_name(ECQV_EC_CURVE);
+    BIGNUM* ca_key = import_priv_key(ca_key_path);
     BIGNUM* order = BN_new();
     EC_GROUP_get_order(group, order, NULL);
     EC_POINT *R_u = ecqv_import_point(group, requester_pk);
@@ -117,15 +97,14 @@ void ecqv_cert_generate(char* ca_key_path, char* requester_pk, char* identity) {
 
     // Step 8: r = ek + d_ca
     BN_mul(ek, e, k, ctx);
-    BN_mod_add(r, ek, EC_KEY_get0_private_key(ca_key), order, ctx);
+    BN_mod_add(r, ek, ca_key, order, ctx);
 
     // Printing the implicit certificate
-    ecqv_export_implicit_cert(group, P_u);
-    BN_print_fp(stdout, r);
-    printf("\n");
+    ecqv_point_print(group, P_u);
+    ecqv_bn_print(r);
 
     // Freeing memory
-    EC_KEY_free(ca_key);
+    BN_free(ca_key);
     EC_POINT_free(R_u);
     EC_POINT_free(kG);
     BN_free(k);
@@ -137,8 +116,8 @@ void ecqv_cert_generate(char* ca_key_path, char* requester_pk, char* identity) {
 }
 
 void ecqv_cert_reception(char* requester_key_path, char* ca_pk, char* cert, char* U, char* r_str) {
-    EC_KEY *req_key = ecqv_import_pem(requester_key_path);
-    const EC_GROUP *group = EC_KEY_get0_group(req_key);
+    const EC_GROUP *group = EC_GROUP_new_by_curve_name(ECQV_EC_CURVE);
+    BIGNUM* req_key = import_priv_key(requester_key_path);
     EC_POINT *Q_ca = ecqv_import_point(group, ca_pk);
     EC_KEY *key = EC_KEY_new();
     EC_POINT *P_u = ecqv_import_implicit_cert(group, cert);
@@ -156,7 +135,7 @@ void ecqv_cert_reception(char* requester_key_path, char* ca_pk, char* cert, char
     // Step 3: Calculate 'e' based on the hash of the implicit certificate 
     e = ecqv_hash_implicit_cert(group, P_u, U);
     
-    BN_mul(ek_u, e, EC_KEY_get0_private_key(req_key), ctx);
+    BN_mul(ek_u, e, req_key, ctx);
 
     BIGNUM* order = BN_new();
     if (EC_GROUP_get_order(group, order, ctx) == 0) {
@@ -173,13 +152,7 @@ void ecqv_cert_reception(char* requester_key_path, char* ca_pk, char* cert, char
     EC_KEY_set_public_key(key, Q_u);
 
     if (EC_KEY_check_key(key)) {
-        /* char *str = EC_POINT_point2hex(group, EC_KEY_get0_public_key(key), POINT_CONVERSION_UNCOMPRESSED, NULL); */
-        /* char *str = BN_bn2hex(EC_KEY_get0_private_key(key)); */
-        char *str = BN_bn2hex(d_u);
-        printf("%s\n", str);
-        FILE* pem = fopen("cl_key.pem", "wb");
-        PEM_write_ECPrivateKey(pem, key, NULL, NULL, 0, NULL, NULL);
-        fclose(pem);
+        ecqv_bn_print(d_u);
     } else {
         printf("Verification failed\n");
     }
@@ -194,12 +167,12 @@ void ecqv_cert_reception(char* requester_key_path, char* ca_pk, char* cert, char
     BN_free(r);
     BN_CTX_free(ctx);
     EC_KEY_free(key);
-    EC_KEY_free(req_key);
+    BN_free(req_key);
 }
 
 void ecqv_cert_pk_extract(char* ca_pk, char* cert, char* identity) {
     const EC_GROUP *group = EC_GROUP_new_by_curve_name(ECQV_EC_CURVE);
-    EC_POINT *Q_ca = ecqv_import_point(group, ca_pk);
+    EC_POINT *Q_ca = import_public_key(group, ca_pk);
     EC_KEY *key = EC_KEY_new();
     EC_POINT *P_u = ecqv_import_implicit_cert(group, cert);
     char* U = identity;
@@ -213,15 +186,7 @@ void ecqv_cert_pk_extract(char* ca_pk, char* cert, char* identity) {
  
     EC_POINT_add(group, Q_u, ePu, Q_ca, 0);
 
-    EC_KEY_set_group(key, group);
-    EC_KEY_set_public_key(key, Q_u);
-
-    if (EC_KEY_check_key(key)) {
-        char *str = EC_POINT_point2hex(group, EC_KEY_get0_public_key(key), POINT_CONVERSION_UNCOMPRESSED, NULL);
-        printf("%s\n", str);
-    } else {
-        printf("Verification failed\n");
-    }
+    ecqv_point_print(group, Q_u);
 
     EC_POINT_free(Q_u);
     EC_POINT_free(Q_ca);
@@ -277,12 +242,9 @@ void ecqv_verify_confirmation(char* ca_path, char* cert_pk, char* g_pk, char* ve
 {
     const EC_GROUP *group = EC_GROUP_new_by_curve_name(ECQV_EC_CURVE);
 
-    EC_KEY *key = ecqv_import_pem(ca_path);
-    const BIGNUM *d_ca = EC_KEY_get0_private_key(key);
-    EC_POINT *Q_i = EC_POINT_new(group);
-    EC_POINT_hex2point(group, cert_pk, Q_i, NULL);
-    EC_POINT *G_i = EC_POINT_new(group);
-    EC_POINT_hex2point(group, g_pk, G_i, NULL);
+    const BIGNUM *d_ca = import_priv_key(ca_path);
+    EC_POINT *Q_i = import_public_key(group, cert_pk);
+    EC_POINT *G_i = import_public_key(group, g_pk);
 
     // Generation of the private key to decrypt the incoming verification number
     // K = d_ca . Q_i
@@ -310,13 +272,12 @@ void ecqv_verify_confirmation(char* ca_path, char* cert_pk, char* g_pk, char* ve
         printf("%s\n", decyphered_verif);
     }
 
-    EC_POINT_free(Q_i);
     EC_POINT_free(K);
-    EC_POINT_free(G_i);
     BN_CTX_free(ctx);
     EC_POINT_free(verif);
     EC_POINT_free(verif_pub);
-    EC_KEY_free(key);
+    EC_POINT_free(G_i);
+    EC_POINT_free(Q_i);
 }
 
 static BIGNUM* ecqv_build_group_private_key(EC_KEY* ca_key, char** ids, size_t ids_len)
@@ -345,10 +306,8 @@ static EC_POINT* ecqv_build_pubsub_public_key(const EC_GROUP* group, char** cert
     EC_POINT** pks = malloc(n * sizeof(EC_POINT*));
     EC_POINT** g = malloc(n * sizeof(EC_POINT*));
     for (size_t i = 0; i < n; ++i) {
-        pks[i] = EC_POINT_new(group);
-        EC_POINT_hex2point(group, cert_pks[i], pks[i], NULL);
-        g[i] = EC_POINT_new(group);
-        EC_POINT_hex2point(group, g_pks[i], g[i], NULL);
+        pks[i] = ecqv_import_point(group, cert_pks[i]);
+        g[i] = ecqv_import_point(group, g_pks[i]);
     }
 
     EC_POINT* acc = EC_POINT_new(group);
