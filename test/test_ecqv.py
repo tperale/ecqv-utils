@@ -82,18 +82,6 @@ def ecqv_verify_confirmation(ecqv_utils_path, verify, cert_pk, g_pk, ca_path):
 
 
 def ecqv_group_generate(ecqv_utils_path, ca_path, ids, g_pks, cert_pks, verify_numbers):
-    print(
-        '%s group_generate -c "%s" -i "%s" -g "%s" -d "%s" -v "%s"'
-        % (
-            ecqv_utils_path,
-            ca_path,
-            ",".join(ids),
-            ",".join(g_pks),
-            ",".join(cert_pks),
-            ",".join(verify_numbers),
-        )
-    )
-
     s = os.popen(
         '%s group_generate -c "%s" -i "%s" -g "%s" -d "%s" -v "%s"'
         % (

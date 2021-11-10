@@ -21,11 +21,14 @@ void ecqv_pk_extract(char* key_str) {
         EC_KEY_free(key);
     } else {
         BIGNUM* priv = BN_new();
-        BN_hex2bn(&priv, key_str);
+        unsigned char bin[256];
+        int len = ecqv_decrypt_b64((unsigned char*) key_str, strlen(key_str), bin);
+        BN_bin2bn(bin, len, priv);
         EC_POINT_mul(group, pk, priv, NULL, NULL, NULL);
         BN_free(priv);
     }
- 
+    ECQV_DEBUG(printf("pk : "));
+    ECQV_DEBUG(ecqv_point_print_hex(group, pk));
     ecqv_point_print(group, pk);
     EC_POINT_free(pk);
 }
@@ -42,7 +45,7 @@ void ecqv_priv_extract(char* key_str) {
     } 
 }
 
-size_t ecqv_encrypt(const char* msg, const char* key, char* ciphertext) {
+size_t ecqv_encrypt_len(const unsigned char* msg, size_t msg_len, const char* key, unsigned char* ciphertext) {
     EVP_CIPHER_CTX *ctx;
     unsigned char *iv = (unsigned char *)"0123456789012345";
     int len;
@@ -50,7 +53,7 @@ size_t ecqv_encrypt(const char* msg, const char* key, char* ciphertext) {
 
     ctx = EVP_CIPHER_CTX_new();
     EVP_EncryptInit_ex(ctx, EVP_aes_256_cbc(), NULL, (const unsigned char*) key, iv);
-    EVP_EncryptUpdate(ctx, (unsigned char*) ciphertext, &len, (const unsigned char*) msg, strlen((const char*) msg));
+    EVP_EncryptUpdate(ctx, ciphertext, &len, (const unsigned char*) msg, msg_len);
 
     ciphertext_len = len;
 
@@ -62,19 +65,23 @@ size_t ecqv_encrypt(const char* msg, const char* key, char* ciphertext) {
     return (size_t) ciphertext_len;
 }
 
-size_t ecqv_decrypt(const char* msg, const char* key, char* plaintext) {
+size_t ecqv_encrypt(const unsigned char* msg, const char* key, unsigned char* ciphertext) {
+    return ecqv_encrypt_len(msg, strlen((const char*) msg), key, ciphertext);
+}
+
+size_t ecqv_decrypt(const unsigned char* msg, const char* key, unsigned char* plaintext) {
     EVP_CIPHER_CTX *ctx;
     unsigned char *iv = (unsigned char *)"0123456789012345";
     unsigned char ciphertext[256];
     int len, cipher_len, plaintext_len;
 
-    cipher_len = ecqv_decrypt_b64(msg, strlen(msg), (char*) ciphertext);
+    cipher_len = ecqv_decrypt_b64(msg, strlen((char*) msg), ciphertext);
 
     ctx = EVP_CIPHER_CTX_new();
     EVP_DecryptInit_ex(ctx, EVP_aes_256_cbc(), NULL, (const unsigned char*) key, iv);
-    EVP_DecryptUpdate(ctx, (unsigned char*) plaintext, &len, (unsigned char*) ciphertext, cipher_len);
+    EVP_DecryptUpdate(ctx, plaintext, &len, (unsigned char*) ciphertext, cipher_len);
     plaintext_len = len;
-    EVP_DecryptFinal_ex(ctx, (unsigned char*) plaintext + len, &len);
+    EVP_DecryptFinal_ex(ctx, (unsigned char*) (plaintext + len), &len);
     plaintext_len += len;
     plaintext[plaintext_len] = '\0';
 
