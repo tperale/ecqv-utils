@@ -18,12 +18,6 @@
     "Usage: ecqv-utils CMD [OPTION...] \n" \
     "\n"
 
-#define ECQV_CERT_ENCRYPT_CMD_INFO \
-    "<CMD>: encrypt \n" \
-    "<Options>\n" \
-    "  -m <arg>\n" \
-    "  -k <arg>\n"
- 
 static void print_usage_and_exit(void);
 
 static size_t parse_cmd_list(char* input, char*** output)
@@ -52,7 +46,7 @@ static size_t parse_cmd_list(char* input, char*** output)
     "<CMD>: <pk_extract - priv_extract>\n" \
     "<Options>\n" \
     "  -c <arg>     The PEM file containing the EC private key\n" \
-    "  -k <arg>     HEX formatted string of the EC private key\n" \
+    "  -k <arg>     B64 formatted string of the EC private key\n" \
     "\n"
 
 static void parse_cmd_options_pk_extract(int argc, char **argv, char** key)
@@ -119,7 +113,7 @@ static void parse_cmd_options_cert_request(int argc, char **argv, char** request
     "<CMD>: cert_generate\n" \
     "<Options>\n" \
     "  -i <arg>     Identity of the requester\n" \
-    "  -r <arg>     The HEX representation EC public key of the requester\n" \
+    "  -r <arg>     The B64 representation EC public key of the requester\n" \
     "  -k <arg>     The PEM file containing the EC private key of the CA\n" \
     "\n"
 static void parse_cmd_options_cert_generate(int argc, char **argv, char** identity, char** requester_pk, char** ca_key)
@@ -275,8 +269,8 @@ static void parse_cmd_options_cert_group_generate(int argc, char **argv, char** 
     "<CMD>: cert_pk_extract \n" \
     "<Options>\n" \
     "  -i <arg>     Identity of the requester\n" \
-    "  -c <arg>     The CA public key in hex format\n" \
-    "  -a <arg>     The implicit certificate in hex format\n" \
+    "  -c <arg>     The CA public key in B64 format\n" \
+    "  -a <arg>     The implicit certificate in B64 format\n" \
     "\n"
 static void parse_cmd_options_cert_pk_extract(int argc, char **argv, char** identity, char** ca_pk, char** cert)
 {
@@ -312,8 +306,8 @@ static void parse_cmd_options_cert_pk_extract(int argc, char **argv, char** iden
     "<Options>\n" \
     "  -i <arg>     Identity of the requester\n" \
     "  -k <arg>     The PEM file containing the EC key of the requester\n" \
-    "  -c <arg>     The CA public key in hex format\n" \
-    "  -a <arg>     The implicit certificate in hex format\n" \
+    "  -c <arg>     The CA public key in B64 format\n" \
+    "  -a <arg>     The implicit certificate in B64 format\n" \
     "  -r <arg>     The number 'r' calculated by the CA\n" \
     "\n"
 static void parse_cmd_options_cert_reception(int argc, char **argv, char** requester_key, char** ca_pk, char** cert, char** identity, char** r)
@@ -378,7 +372,7 @@ static void parse_cmd_options_encrypt(int argc, char** argv, char** msg, char** 
     }
 
     if (!*msg || !*key) {
-        fprintf(stderr, ECQV_INFO ECQV_CERT_ENCRYPT_CMD_INFO);
+        fprintf(stderr, ECQV_INFO ECQV_INFO_ENCRYPT);
         exit(EXIT_FAILURE);
     }
 }
@@ -389,7 +383,7 @@ static void parse_cmd_options_encrypt(int argc, char** argv, char** msg, char** 
     "  -m <arg>     Message to encrypt.\n" \
     "  -k <arg>     Signing key.\n"  \
     "\n"
-static void parse_cmd_schnorr_sign(int argc, char **argv, char** priv_hex, char** msg)
+static void parse_cmd_schnorr_sign(int argc, char **argv, char** priv_b64, char** msg)
 {
     int opt;
 
@@ -398,7 +392,7 @@ static void parse_cmd_schnorr_sign(int argc, char **argv, char** priv_hex, char*
     while ((opt = getopt(argc, argv, "k:m:")) != -1) {
         switch (opt) {
             case 'k':
-                *priv_hex = optarg;
+                *priv_b64 = optarg;
                 break;
             case 'm':
                 *msg = optarg;
@@ -409,7 +403,7 @@ static void parse_cmd_schnorr_sign(int argc, char **argv, char** priv_hex, char*
         }
     }
 
-    if (!*msg || !*priv_hex) {
+    if (!*msg || !*priv_b64) {
         fprintf(stderr, ECQV_INFO_SIGN);
         exit(EXIT_FAILURE);
     }
@@ -459,8 +453,8 @@ static void parse_cmd_schnorr_verify(int argc, char **argv, char** pub_key, char
 #define ECQV_INFO_CMD_MUL \
     "<CMD>: mul\n" \
     "<Options>\n" \
-    "  -k <arg>     Private key in hex format.\n"  \
-    "  -p <arg>     Public key in hex format.\n"  \
+    "  -k <arg>     Private key in B64 format.\n"  \
+    "  -p <arg>     Public key B64 in format.\n"  \
     "\n"
 static void parse_cmd_mul(int argc, char **argv, char** pub_key, char** priv_key)
 {
@@ -574,10 +568,10 @@ int main(int argc, char **argv)
         ecqv_decrypt((unsigned char*) msg, key, result);
         printf("%s\n", result);
     } else if (strcmp(cmd, "sign") == 0) {
-        char* priv_hex = NULL;
+        char* priv_b64 = NULL;
         char* msg = NULL;
-        parse_cmd_schnorr_sign(argc, argv, &priv_hex, &msg);
-        schnorr_sign(priv_hex, msg);
+        parse_cmd_schnorr_sign(argc, argv, &priv_b64, &msg);
+        schnorr_sign(priv_b64, msg);
     } else if (strcmp(cmd, "verify") == 0) {
         char* pub_key = NULL;
         char* msg = NULL;

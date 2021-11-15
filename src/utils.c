@@ -191,12 +191,3 @@ EC_POINT* ecqv_pk_extract_from_bn(const EC_GROUP *group, BIGNUM* bn) {
     EC_POINT_mul(group, pk, bn, NULL, NULL, NULL);
     return pk;
 }
-
-/* EC_POINT* ecqv_pk_extract_from_hex(const EC_GROUP *group, char* bn_hex) { */
-/*     BIGNUM *priv_k = BN_new(); */
-/*     BN_hex2bn(&priv_k, bn_hex); */
-/*     EC_POINT* pk = EC_POINT_new(group); */
-/*     EC_POINT_mul(group, pk, priv_k, NULL, NULL, NULL); */
-/*     BN_free(priv_k); */
-/*     return pk; */
-/* } */
