@@ -1,4 +1,5 @@
 #include "ecqv.h"
+#include "backend/io.h"
 #include "opt.h"
 #include "crypto.h"
 #include "utils.h"
@@ -59,7 +60,7 @@ void ecqv_cert_request(char* requester_key_path) {
     EC_POINT_free(pk);
 }
 
-void ecqv_cert_generate(char* ca_key_path, char* requester_pk, char* identity) {
+void ecqv_cert_generate(char* ca_key_path, char* requester_pk, char* identity, char* serv_key_path) {
     const EC_GROUP *group = EC_GROUP_new_by_curve_name(ECQV_EC_CURVE);
     BIGNUM* ca_key = import_priv_key(ca_key_path);
     ECQV_DEBUG(printf("ca priv : "));
@@ -70,7 +71,7 @@ void ecqv_cert_generate(char* ca_key_path, char* requester_pk, char* identity) {
     ECQV_DEBUG(printf("R_u : "));
     ECQV_DEBUG(ecqv_point_print_hex(group, R_u));
     EC_POINT *kG = EC_POINT_new(group);
-    BIGNUM *k = BN_new();
+    BIGNUM *k;
     EC_POINT *P_u = EC_POINT_new(group);
     BIGNUM *e = NULL;
     BN_CTX *ctx = BN_CTX_new();
@@ -82,9 +83,14 @@ void ecqv_cert_generate(char* ca_key_path, char* requester_pk, char* identity) {
     // Step 2: Validate the R_u
 
     // Step 3: Generate an EC key pair (k, kG)
-    BN_rand_range(k, order);
+    if (serv_key_path) {
+        k = import_priv_key(serv_key_path);
+    } else {
+        k = BN_new();
+        BN_rand_range(k, order);
+    }
     EC_POINT_mul(group, kG, k, NULL, NULL, NULL); // Calculate the private key using the same generator as the CA key
-
+                                                  //
     // Step 4: Compute the EC point P_u = R_u + kG
     EC_POINT_add(group, P_u, R_u, kG, NULL);
 

@@ -115,14 +115,15 @@ static void parse_cmd_options_cert_request(int argc, char **argv, char** request
     "  -i <arg>     Identity of the requester\n" \
     "  -r <arg>     The B64 representation EC public key of the requester\n" \
     "  -k <arg>     The PEM file containing the EC private key of the CA\n" \
+    "  -s <arg>     The server key (optional)\n" \
     "\n"
-static void parse_cmd_options_cert_generate(int argc, char **argv, char** identity, char** requester_pk, char** ca_key)
+static void parse_cmd_options_cert_generate(int argc, char **argv, char** identity, char** requester_pk, char** ca_key, char** serv_key)
 {
     int opt;
 
     opterr = 0; /* To inhibit error messages */
 
-    while ((opt = getopt(argc, argv, "i:r:k:")) != -1) {
+    while ((opt = getopt(argc, argv, "i:r:k:s:")) != -1) {
         switch (opt) {
             case 'i':
                 *identity = optarg;
@@ -132,6 +133,9 @@ static void parse_cmd_options_cert_generate(int argc, char **argv, char** identi
                 break;
             case 'k':
                 *ca_key = optarg;
+                break;
+            case 's':
+                *serv_key = optarg;
                 break;
             default:
                 print_usage_and_exit();
@@ -515,8 +519,9 @@ int main(int argc, char **argv)
         char* identity = NULL;
         char* requester_pk = NULL;
         char* ca_key = NULL;
-        parse_cmd_options_cert_generate(argc, argv, &identity, &requester_pk, &ca_key);
-        ecqv_cert_generate(ca_key, requester_pk, identity);
+        char* serv_key = NULL;
+        parse_cmd_options_cert_generate(argc, argv, &identity, &requester_pk, &ca_key, &serv_key);
+        ecqv_cert_generate(ca_key, requester_pk, identity, serv_key);
     } else if (strcmp(cmd, "cert_reception") == 0) {
         char* requester_key = NULL;
         char* ca_pk = NULL; 

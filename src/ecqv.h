@@ -18,7 +18,7 @@ void ecqv_cert_request(char* requester_key_path);
  * 
  * @arg{opt} A struct containing the command line arguments.
  */
-void ecqv_cert_generate(char* ca_key_path, char* requester_pk, char* identity);
+void ecqv_cert_generate(char* ca_key_path, char* requester_pk, char* identity, char* serv_key_path);
 
 /**
  * @desc Extracting the private and public key from the implicit certificate 
