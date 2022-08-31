@@ -1,5 +1,4 @@
 #include "ecqv.h"
-#include "backend/io.h"
 #include "opt.h"
 #include "crypto.h"
 #include "utils.h"
@@ -164,6 +163,18 @@ void ecqv_cert_reception(char* requester_key_path, char* ca_pk, char* cert, char
     EC_KEY_set_group(key, group);
     EC_KEY_set_private_key(key, d_u);
     EC_KEY_set_public_key(key, Q_u);
+
+    BIO *bio = NULL, *b64 = NULL;
+    BUF_MEM *buffer_ptr = NULL;
+    unsigned char *b64text = NULL;
+
+    bio = BIO_new(BIO_s_mem());
+    PEM_write_bio_ECPrivateKey(bio, key, NULL, NULL, 0, NULL, NULL);
+    int bufsize = 8192;
+    char buf[bufsize];
+    int len = BIO_read(bio, buf, bufsize);
+    printf("%s\n", buf);
+    BIO_free(bio);
 
     if (EC_KEY_check_key(key)) {
         ECQV_DEBUG(printf("d_u : "));
